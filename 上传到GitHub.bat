@@ -16,6 +16,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+
 echo Git已安装
 git --version
 echo.
