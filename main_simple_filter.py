@@ -178,28 +178,20 @@ def main(game_name: str = None):
         if time_match:
             time_range = time_match.group(1)
     
-    # 使用游戏名称和时间范围生成输出文件名
+    # 使用游戏名称和时间范围生成输出文件名（只生成TXT格式）
     game_name_safe = game_name.replace(' ', '_').replace('&', '_').replace(':', '_')
     if time_range:
-        output_file = f"output/reports/{game_name_safe}_{time_range}_精选评论_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+        output_file = f"output/reports/{game_name_safe}_{time_range}_精选评论_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     else:
-        output_file = f"output/reports/{game_name_safe}_精选评论_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+        output_file = f"output/reports/{game_name_safe}_精选评论_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     
-    # 生成Markdown文档
-    content = generate_filtered_report(df_sorted, len(reviews), len(df), len(df_filtered), game_name)
-    
+    # 生成TXT文档（纯文本，方便复制给AI）
+    logger.info(f"正在生成报告...")
     with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(content)
-    
-    logger.info(f"✓ 文档已保存: {output_file}")
-    
-    # 同时生成简化版（纯文本，方便复制给AI）
-    simple_file = output_file.replace('.md', '_简化版.txt')
-    with open(simple_file, 'w', encoding='utf-8') as f:
         f.write(generate_simple_text(df_sorted, game_name))
     
-    logger.info(f"✓ 简化版已保存: {simple_file}")
+    logger.info(f"✓ 精选评论已保存: {output_file}")
     
     # 统计信息
     logger.info("\n" + "="*60)
@@ -210,67 +202,9 @@ def main(game_name: str = None):
     logger.info(f"筛选后: {len(df_filtered)} 条")
     logger.info(f"最终精选: {len(df_sorted)} 条")
     logger.info(f"\n输出文件:")
-    logger.info(f"  - 详细版: {output_file}")
-    logger.info(f"  - 简化版: {simple_file}")
-    logger.info("\n你可以将简化版内容复制给AI进行进一步分析")
+    logger.info(f"  - 精选评论: {output_file}")
+    logger.info("\n你可以将文件内容复制给AI进行进一步分析")
     logger.info("="*60)
-
-
-def generate_filtered_report(df: pd.DataFrame, original_count: int, cleaned_count: int, filtered_count: int, game_name: str = "游戏") -> str:
-    """生成筛选后的报告"""
-    
-    report = f"""# {game_name} 精选评论
-
-生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-## 筛选统计
-
-- **原始评论数**: {original_count:,} 条
-- **清洗后**: {cleaned_count:,} 条
-- **智能筛选后**: {filtered_count:,} 条
-- **最终精选**: {len(df):,} 条
-
-## 筛选标准
-
-1. **长度要求**: 至少30个字符
-2. **排除无意义评论**: 过滤"fun"、"good"等简单词汇
-3. **包含具体内容**: 必须包含游戏相关关键词
-4. **价值排序**: 优先保留极端评分、长评论、包含问题/建议的评论
-
----
-
-## 精选评论列表
-
-"""
-    
-    # 按评分分组显示
-    for rating in sorted(df['rating'].unique(), reverse=True):
-        df_rating = df[df['rating'] == rating]
-        if len(df_rating) == 0:
-            continue
-        
-        report += f"\n### {rating} 星评论 ({len(df_rating)} 条)\n\n"
-        
-        for idx, (_, row) in enumerate(df_rating.iterrows(), 1):
-            report += f"#### 评论 {idx}\n\n"
-            # 处理日期：如果是Timestamp对象，先转换为字符串
-            date_value = row.get('date', 'N/A')
-            if pd.notna(date_value) and date_value != 'N/A':
-                if isinstance(date_value, pd.Timestamp):
-                    date_str = date_value.strftime('%Y-%m-%d')
-                elif isinstance(date_value, str):
-                    date_str = date_value[:10] if len(date_value) >= 10 else date_value
-                else:
-                    date_str = str(date_value)[:10]
-            else:
-                date_str = 'N/A'
-            
-            report += f"**日期**: {date_str}\n"
-            report += f"**价值分数**: {row.get('value_score', 0):.2f}\n\n"
-            report += f"**评论内容**:\n```\n{row.get('content_cleaned', row.get('content', ''))}\n```\n\n"
-            report += "---\n\n"
-    
-    return report
 
 
 def generate_simple_text(df: pd.DataFrame, game_name: str = "游戏") -> str:
