@@ -1,194 +1,202 @@
-# 游戏商店评论分析系统
+# 游戏商店评论采集与筛选工具
 
-针对特定游戏在iOS和Google Play商店的评论进行采集和智能筛选。
+一个简单易用的工具，用于采集 Google Play 商店的游戏评论，并智能筛选出有价值的评论供游戏设计师分析。
 
-## 项目概述
-
-本项目旨在采集并筛选以下游戏的商店评论：
-- Carnival Tycoon
-- TopTycoon
-- Animals & Coins
-- Fish of Fortune
-
-**核心功能**：
-- ✅ **多平台支持**: 支持iOS App Store和Google Play Store
-- ✅ **智能筛选**: 自动过滤无意义评论，保留有价值的反馈
-- ✅ **价值排序**: 优先保留情绪化、具体的评论
-- ✅ **简洁输出**: 生成可直接复制给AI分析的文档
-
-## 设计理念
-
-作为游戏设计师，需要的是：
-- **有意义的反馈**：具体、情绪化、可操作的评论
-- **高价值评论**：即使数量少，但包含具体问题/建议的评论
-- **便于分析**：输出格式简洁，可直接复制给AI进行深度分析
-
-## 环境要求
-
-- Python 3.8+
-- Windows/Linux/macOS
-
-## 安装步骤
+## 快速开始
 
 ### 1. 安装依赖
 
-**方式1：使用批处理文件（推荐，Windows）**
-- 双击运行 `安装依赖_智能版.bat`
+双击运行：`安装依赖.bat`
 
-**方式2：命令行安装**
+或手动安装：
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 配置游戏ID
+### 2. 配置游戏
 
-编辑 `config.yaml` 文件，填入各游戏在App Store和Google Play的ID：
+编辑 `config.yaml`，填入游戏的 Google Play ID：
 
 ```yaml
 games:
-  - name: "Animals & Coins"
-    appstore_id: ""  # 需要查找
-    playstore_id: "com.innplaylabs.animalkingdomraid"  # 需要查找
-    platforms: ["ios", "android"]
+  - name: "TopTycoon"
+    playstore_id: "com.monopoly.dream.idle.king"
+    platforms: ["android"]
 ```
 
-**如何查找游戏ID：**
-- **App Store**: 在iTunes或App Store中搜索游戏，从URL中获取ID
-- **Google Play**: 在Google Play中搜索游戏，从URL中获取包名（如 com.example.game）
+### 3. 采集评论
 
-## 使用方法
-
-### 步骤1：数据采集
-
-**方式1：使用批处理文件（推荐，Windows）**
-- 双击运行 `运行测试.bat` - 测试单个游戏的数据采集
-
-**方式2：命令行运行**
+**方法一：使用批处理文件（推荐）**
 ```bash
-python3 test_scraper.py
+运行采集.bat "游戏名称" [开始日期] [结束日期]
 ```
 
-**完整采集**（使用配置文件）：
+**方法二：直接运行Python脚本**
 ```bash
-python3 -m src.scraper.main_scraper
+python 采集评论.py "游戏名称" [开始日期] [结束日期]
 ```
 
-### 步骤2：智能筛选
-
-**方式1：使用批处理文件（推荐，Windows）**
-- 双击运行 `运行粗筛.bat`
-
-**方式2：命令行运行**
+**示例：**
 ```bash
-python3 main_simple_filter.py
+# 采集 TopTycoon 2025年9-12月的评论
+运行采集.bat "TopTycoon" 2025-09-01 2025-12-31
+
+# 采集 Sunday City: Life RolePlay 最近一年的评论（默认）
+运行采集.bat "Sunday City: Life RolePlay"
+
+# 采集 Cash Club 2024年1-11月的评论
+运行采集.bat "Cash Club" 2024-01-01 2024-11-30
 ```
 
-程序会：
-1. 加载已采集的数据
-2. 智能筛选有意义的评论（过滤"fun"、"good"等无意义评论）
-3. 按价值排序（极端评分、长评论、包含问题描述的优先）
-4. 生成两个文件：
-   - **详细版**（Markdown格式）- 包含完整统计和格式化内容
-   - **简化版**（TXT格式）- 纯文本，可直接复制给AI分析
+### 4. 筛选评论
 
-### 步骤3：AI分析
+**方法一：使用批处理文件（推荐）**
+```bash
+运行筛选.bat "游戏名称"
+```
 
-将简化版TXT文件的内容复制给AI（如ChatGPT、Claude等），让AI进行深度分析和总结。
+**方法二：直接运行Python脚本**
+```bash
+python main_simple_filter.py "游戏名称"
+```
+
+**示例：**
+```bash
+# 筛选 TopTycoon 的评论
+运行筛选.bat "TopTycoon"
+
+# 筛选 Sunday City: Life RolePlay 的评论
+运行筛选.bat "Sunday City: Life RolePlay"
+
+# 如果不指定游戏名称，将自动使用最新的数据文件
+运行筛选.bat
+```
+
+## 输出文件
+
+- **采集的数据**：`data/raw/` 目录（JSON格式）
+- **筛选结果**：`output/reports/` 目录
+  - **详细版**：Markdown 格式（包含完整信息）
+  - **简化版**：TXT 格式（可直接复制给AI分析）
+
+## 注意事项
+
+1. **游戏名称必须与 config.yaml 中的配置完全一致**
+   - 查看可用游戏：打开 `config.yaml` 查看 `games` 列表
+   - 游戏名称区分大小写和特殊字符
+
+2. **日期格式**
+   - 必须使用 `YYYY-MM-DD` 格式
+   - 例如：`2025-09-01`
+
+3. **日志文件**
+   - 采集日志：`scrape.log`
+   - 筛选日志：`filter.log`
+
+## 常见问题
+
+**Q: 如何查看有哪些游戏可以采集？**  
+A: 打开 `config.yaml` 文件，查看 `games` 部分，每个游戏都有 `name` 字段。
+
+**Q: 如何查找游戏的 Google Play ID？**  
+A: 
+1. 在浏览器中打开 Google Play Store
+2. 搜索游戏名称
+3. 打开游戏页面
+4. 查看URL，格式类似：`https://play.google.com/store/apps/details?id=com.example.game`
+5. 复制包名（如：`com.example.game`）
+
+**Q: 采集失败怎么办？**  
+A: 检查 `scrape.log` 日志文件，查看具体错误信息。常见问题：
+- 游戏名称不匹配
+- Google Play ID 未配置
+- 网络连接问题
+
+**Q: 筛选时找不到数据文件？**  
+A: 确保已经运行过采集，并且游戏名称与 config.yaml 中的配置一致。
+
+## 地区配置
+
+在 `config.yaml` 中可以配置采集的地区：
+
+```yaml
+scraper:
+  regions:
+    - name: "美国"
+      lang: "en"      # 语言代码: en(英文), zh(中文), ja(日文)等
+      country: "us"   # 国家代码: us(美国), cn(中国), jp(日本)等
+```
+
+### 常用地区代码
+
+**语言代码 (lang)**
+- `en` - 英文
+- `zh` - 中文
+- `ja` - 日文
+- `ko` - 韩文
+- `es` - 西班牙文
+- `fr` - 法文
+- `de` - 德文
+- `pt` - 葡萄牙文
+- `ru` - 俄文
+
+**国家代码 (country)**
+- `us` - 美国
+- `cn` - 中国
+- `jp` - 日本
+- `kr` - 韩国
+- `gb` - 英国
+- `ca` - 加拿大
+- `au` - 澳大利亚
+- `de` - 德国
+- `fr` - 法国
+- `es` - 西班牙
+- `it` - 意大利
+- `br` - 巴西
+- `in` - 印度
+- `ru` - 俄罗斯
 
 ## 项目结构
 
 ```
 商店评论区分析/
-├── README.md                 # 项目说明
-├── requirements.txt          # Python依赖
-├── config.yaml               # 配置文件
-├── main_simple_filter.py     # 评论筛选主程序
-├── test_scraper.py           # 测试采集脚本
-├── src/
-│   ├── scraper/             # 数据采集模块
-│   │   ├── appstore_scraper.py
-│   │   ├── playstore_scraper.py
-│   │   └── main_scraper.py
-│   ├── processor/           # 数据处理模块
-│   │   ├── data_cleaner.py
-│   │   └── text_preprocessor.py
-│   └── analyzer/            # 分析模块
-│       └── review_filter.py # 评论筛选器
-├── data/
-│   ├── raw/                 # 原始数据
-│   ├── processed/           # 处理后数据
-│   └── analysis/            # 分析结果
-└── output/                  # 输出报告
-    └── reports/             # 筛选后的评论文档
+├── src/                    # 源代码
+│   ├── scraper/           # 采集模块
+│   ├── processor/         # 数据处理模块
+│   └── analyzer/           # 分析模块
+├── data/                   # 数据文件
+│   └── raw/               # 原始评论数据
+├── output/                 # 输出文件
+│   └── reports/           # 筛选结果
+├── config.yaml            # 配置文件
+├── 采集评论.py            # 采集脚本
+├── main_simple_filter.py   # 筛选脚本
+├── 运行采集.bat           # 采集批处理文件
+├── 运行筛选.bat           # 筛选批处理文件
+└── requirements.txt       # Python依赖
 ```
 
-## 筛选标准
+## 工作流程
 
-### 保留的评论
-- ✅ 长度 ≥ 30字符
-- ✅ 包含具体内容（游戏相关关键词）
-- ✅ 包含问题描述或建议
-- ✅ 情绪化表达（极端评分优先）
-
-### 过滤的评论
-- ❌ 过短评论（<30字符）
-- ❌ 简单词汇（"fun", "good", "5 stars"）
-- ❌ 无具体内容的评论
-
-## 输出示例
-
-简化版格式（可直接复制给AI）：
 ```
-[评论 1] 评分: 1/5 | 日期: 2025-10-15
-The coin system is broken. I spent $10 and got nothing. This needs to be fixed immediately.
---------------------------------------------------------------------------------
-
-[评论 2] 评分: 5/5 | 日期: 2025-11-20
-Great game! But we need more levels. The current content gets repetitive after a while.
---------------------------------------------------------------------------------
+数据采集 → 数据清洗 → 智能筛选 → 输出文档 → AI分析
 ```
 
-## 配置说明
+1. **数据采集**：从 Google Play 采集评论数据
+2. **数据清洗**：清理和预处理数据
+3. **智能筛选**：过滤无意义的评论，保留有价值的反馈
+4. **输出文档**：生成 Markdown 和 TXT 格式的文档
+5. **AI分析**：将简化版 TXT 内容复制给 AI（ChatGPT、Claude等）进行深度分析
 
-主要配置项在 `config.yaml` 中：
+## 依赖项
 
-- **games**: 游戏列表和ID配置
-- **scraper**: 采集配置（时间范围、数量限制、地区等）
-- **regions**: 地区配置（语言、国家代码）
-
-## 注意事项
-
-1. **数据采集限制**: 
-   - App Store和Google Play可能有反爬虫机制
-   - 建议设置合理的请求间隔（`delay_between_requests`）
-   - 如果采集失败，可以手动补充数据
-
-2. **游戏ID查找**:
-   - 需要手动查找每个游戏在App Store和Google Play的准确ID
-   - 确保ID正确，否则无法采集数据
-
-3. **数据使用**:
-   - 请遵守各平台的服务条款
-   - 数据仅用于分析目的
-
-## 常见问题
-
-### Q: 采集不到数据怎么办？
-A: 
-1. 检查游戏ID是否正确
-2. 检查网络连接
-3. 尝试增加请求延迟时间
-4. 检查是否有反爬虫限制
-
-### Q: 筛选后评论太少？
-A: 
-- 可以降低 `min_length` 参数（在 `main_simple_filter.py` 中）
-- 可以调整关键词列表（在 `review_filter.py` 中）
-
-### Q: 如何修改筛选标准？
-A: 
-- 编辑 `src/analyzer/review_filter.py`
-- 修改 `meaningless_patterns` 和 `meaningful_keywords`
+- `google-play-scraper` - Google Play 评论采集
+- `pandas` - 数据处理
+- `numpy` - 数值计算
+- `pyyaml` - 配置文件解析
+- `requests` - HTTP 请求
+- `tqdm` - 进度条显示
+- `python-dateutil` - 日期处理
 
 ## 许可证
 

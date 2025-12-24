@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo Cash Club 评论粗筛工具
+echo 评论筛选工具
 echo 筛选有意义的评论，输出到文档
 echo ========================================
 echo.
@@ -23,10 +23,21 @@ if %errorlevel% == 0 (
 
 echo 使用: %PYTHON_CMD%
 echo.
-echo 开始筛选 Cash Club 评论...
+echo 使用方法: 运行筛选.bat "游戏名称"
+echo 示例: 运行筛选.bat "TopTycoon"
+echo 示例: 运行筛选.bat "Sunday City: Life RolePlay"
+echo 如果不提供游戏名称，将自动使用最新的数据文件
 echo.
 
-%PYTHON_CMD% main_simple_filter.py "Cash Club"
+if "%1"=="" (
+    echo 未指定游戏名称，将自动查找最新的数据文件...
+    echo.
+    %PYTHON_CMD% main_simple_filter.py
+) else (
+    echo 开始筛选: %1
+    echo.
+    %PYTHON_CMD% main_simple_filter.py "%1"
+)
 
 echo.
 echo ========================================

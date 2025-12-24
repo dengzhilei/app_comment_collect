@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo Fish of Fortune 评论采集
+echo 评论采集工具
 echo ========================================
 echo.
 
@@ -22,11 +22,25 @@ if %errorlevel% == 0 (
 
 echo 使用: %PYTHON_CMD%
 echo.
-echo 开始采集 Fish of Fortune 的评论...
+echo 使用方法: 运行采集.bat "游戏名称" [开始日期] [结束日期]
+echo 示例: 运行采集.bat "TopTycoon" 2025-09-01 2025-12-31
+echo 示例: 运行采集.bat "Sunday City: Life RolePlay"
+echo.
+
+if "%1"=="" (
+    echo 错误: 请提供游戏名称
+    echo.
+    echo 可用游戏列表（请查看 config.yaml）:
+    echo.
+    pause
+    exit /b 1
+)
+
+echo 开始采集: %1
 echo 这可能需要一些时间，请耐心等待...
 echo.
 
-%PYTHON_CMD% 采集FishOfFortune.py
+%PYTHON_CMD% 采集评论.py %*
 
 echo.
 echo ========================================

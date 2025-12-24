@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo 智能安装Python依赖
+echo 安装Python依赖
 echo ========================================
 echo.
 
@@ -48,43 +48,16 @@ echo ========================================
 echo 这可能需要几分钟，请耐心等待...
 echo.
 
-REM 先安装基础依赖
-echo [1/4] 安装基础工具...
-%PYTHON_CMD% -m pip install --upgrade pip setuptools wheel --quiet
-
-echo [2/4] 安装数据采集依赖...
-echo 注意: 先安装app-store-scraper以解决依赖冲突...
-%PYTHON_CMD% -m pip install app-store-scraper --quiet
-if %errorlevel% neq 0 (
-    echo 警告: app-store-scraper 安装失败
-) else (
-    echo app-store-scraper 安装成功
-)
-%PYTHON_CMD% -m pip install google-play-scraper --quiet
-if %errorlevel% neq 0 (
-    echo 警告: google-play-scraper 安装失败
-)
-
-echo [3/4] 安装数据处理依赖...
-echo 注意: 跳过requests，因为已由app-store-scraper安装...
-%PYTHON_CMD% -m pip install pyyaml pandas numpy beautifulsoup4 lxml tqdm python-dateutil --quiet
-
-echo [4/4] 安装分析和可视化依赖...
-%PYTHON_CMD% -m pip install jieba snownlp textblob nltk vaderSentiment matplotlib seaborn plotly wordcloud --quiet
-
-echo.
-echo ========================================
-echo 步骤3: 验证安装
-echo ========================================
-%PYTHON_CMD% 检查依赖.py
+%PYTHON_CMD% -m pip install -r requirements.txt
 
 echo.
 echo ========================================
 echo 安装完成！
 echo ========================================
 echo.
-echo 现在可以运行测试了：
-echo   双击 "运行测试.bat" 或运行: %PYTHON_CMD% test_scraper.py
+echo 现在可以开始使用了：
+echo   运行采集: 运行采集.bat "游戏名称"
+echo   运行筛选: 运行筛选.bat "游戏名称"
 echo.
 pause
 

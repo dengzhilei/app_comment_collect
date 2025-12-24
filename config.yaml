@@ -1,50 +1,40 @@
 # 游戏配置
 games:
   - name: "Carnival Tycoon"
-    appstore_id: ""  # 需要查找
-    playstore_id: "com.solitairetripeaks.masterdesign"  # 需要查找
-    platforms: ["ios", "android"]
+    playstore_id: "com.solitairetripeaks.masterdesign"
+    platforms: ["android"]
   
   - name: "TopTycoon"
-    appstore_id: "6739124364"
-    appstore_name: "Top Tycoon: Coin Theme Empire"  # App Store上的确切应用名称（可选，如果为空则使用name字段）
     playstore_id: "com.monopoly.dream.idle.king"
-    platforms: ["ios", "android"]
+    platforms: ["android"]
   
   - name: "Animals & Coins"
-    appstore_id: ""
     playstore_id: "com.innplaylabs.animalkingdomraid"
-    platforms: ["ios", "android"]
+    platforms: ["android"]
   
   - name: "Fish of Fortune"
-    appstore_id: ""
     playstore_id: "com.whalo.games.fishoffortune"
-    platforms: ["ios", "android"]
+    platforms: ["android"]
 
   - name: "Fishing Travel"
-    appstore_id: ""
     playstore_id: "com.arkgame.ft"
-    platforms: ["ios", "android"]
+    platforms: ["android"]
 
   - name: "Fishing Master"
-    appstore_id: ""
     playstore_id: "com.arkgame.fishingmaster"
-    platforms: ["ios", "android"]
+    platforms: ["android"]
 
   - name: "Cash Club"
-    appstore_id: ""
     playstore_id: "com.unicornstudio.cashparty.slots.casino.vegas.free"
-    platforms: ["ios", "android"]
+    platforms: ["android"]
 
   - name: "Sunday City: Life RolePlay"
-    appstore_id: ""
     playstore_id: "adventure.party.real.life"
-    platforms: ["ios", "android"]
-  
+    platforms: ["android"]
 
 # 采集配置
 scraper:
-  time_range_days: 365  # 最近一年
+  time_range_days: 365  # 最近一年（默认值，实际使用时会根据命令行参数覆盖）
   max_reviews_per_game: 5000  # 每个游戏最多采集的评论数
   delay_between_requests: 2  # 请求间隔（秒）
   retry_times: 3  # 重试次数
@@ -57,42 +47,3 @@ scraper:
     # - name: "中国"
     #   lang: "zh"
     #   country: "cn"
-  # 注意：默认会采集所有配置的地区，如果想只采集美国区，只保留上面的美国配置即可
-
-# 数据存储
-storage:
-  raw_data_format: "json"  # json 或 csv
-  processed_data_format: "csv"
-  database_path: "data/reviews.db"  # SQLite数据库路径
-
-# 分析配置
-analysis:
-  # 情感分析
-  sentiment:
-    chinese_model: "snownlp"  # snownlp 或 jieba+自定义
-    english_model: "textblob"  # textblob 或 vader
-    min_confidence: 0.6  # 最小置信度
-  
-  # 关键词提取
-  keywords:
-    top_n: 50  # 提取前N个关键词
-    min_frequency: 3  # 最小出现频率
-  
-  # 内容分类
-  classification:
-    categories:
-      - "游戏玩法"
-      - "画面美术"
-      - "音效音乐"
-      - "Bug问题"
-      - "付费相关"
-      - "更新内容"
-      - "其他"
-
-# 报告配置
-report:
-  output_format: ["markdown", "html"]  # 输出格式
-  include_charts: true
-  chart_format: "png"  # png 或 svg
-  language: "zh-CN"  # 报告语言
-
