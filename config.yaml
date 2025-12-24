@@ -2,12 +2,13 @@
 games:
   - name: "Carnival Tycoon"
     appstore_id: ""  # 需要查找
-    playstore_id: ""  # 需要查找
+    playstore_id: "com.solitairetripeaks.masterdesign"  # 需要查找
     platforms: ["ios", "android"]
   
   - name: "TopTycoon"
-    appstore_id: ""
-    playstore_id: ""
+    appstore_id: "6739124364"
+    appstore_name: "Top Tycoon: Coin Theme Empire"  # App Store上的确切应用名称（可选，如果为空则使用name字段）
+    playstore_id: "com.monopoly.dream.idle.king"
     platforms: ["ios", "android"]
   
   - name: "Animals & Coins"
@@ -17,8 +18,29 @@ games:
   
   - name: "Fish of Fortune"
     appstore_id: ""
-    playstore_id: ""
+    playstore_id: "com.whalo.games.fishoffortune"
     platforms: ["ios", "android"]
+
+  - name: "Fishing Travel"
+    appstore_id: ""
+    playstore_id: "com.arkgame.ft"
+    platforms: ["ios", "android"]
+
+  - name: "Fishing Master"
+    appstore_id: ""
+    playstore_id: "com.arkgame.fishingmaster"
+    platforms: ["ios", "android"]
+
+  - name: "Cash Club"
+    appstore_id: ""
+    playstore_id: "com.unicornstudio.cashparty.slots.casino.vegas.free"
+    platforms: ["ios", "android"]
+
+  - name: "Sunday City: Life RolePlay"
+    appstore_id: ""
+    playstore_id: "adventure.party.real.life"
+    platforms: ["ios", "android"]
+  
 
 # 采集配置
 scraper:

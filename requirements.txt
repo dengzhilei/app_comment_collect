@@ -1,6 +1,7 @@
 # 数据采集
 google-play-scraper>=1.2.2
 app-store-scraper>=0.3.5
+playwright>=1.40.0  # 用于App Store采集的替代方案（更稳定）
 
 # 数据处理
 pandas>=2.0.0

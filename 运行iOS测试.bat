@@ -1,8 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo 评论粗筛工具
-echo 筛选有意义的评论，输出到文档
+echo TopTycoon iOS 采集测试
 echo ========================================
 echo.
 
@@ -23,27 +22,16 @@ if %errorlevel% == 0 (
 
 echo 使用: %PYTHON_CMD%
 echo.
-echo 提示: 将自动检测最新的数据文件
-echo 如需指定游戏，可以运行: %PYTHON_CMD% main_simple_filter.py TopTycoon
-echo.
-echo 开始筛选评论...
+echo 开始测试iOS数据采集...
+echo 测试配置: 最近30天，最多50条评论
 echo.
 
-REM 如果提供了参数，传递给Python脚本
-if "%1"=="" (
-    %PYTHON_CMD% main_simple_filter.py
-) else (
-    %PYTHON_CMD% main_simple_filter.py %1
-)
+%PYTHON_CMD% test_ios_scraper.py
 
 echo.
 echo ========================================
-echo 筛选完成
+echo 测试完成
 echo ========================================
-echo.
-echo 查看结果：
-echo   详细版: output\reports\ (Markdown格式)
-echo   简化版: output\reports\ (TXT格式，可直接复制给AI)
 echo.
 pause
 
