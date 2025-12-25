@@ -7,9 +7,9 @@ import subprocess
 from pathlib import Path
 
 # 添加当前目录到路径
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.interactive_input import interactive_filter_input
+from src.interactive.input import interactive_filter_input
 
 
 def main():

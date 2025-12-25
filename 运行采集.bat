@@ -38,7 +38,7 @@ echo 正在加载配置...
 echo ========================================
 echo.
 
-%PYTHON_CMD% -m src.interactive_scrape
+%PYTHON_CMD% -m src.interactive.scrape
 
 :end
 echo.

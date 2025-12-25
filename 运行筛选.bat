@@ -37,7 +37,7 @@ echo 正在加载配置...
 echo ========================================
 echo.
 
-%PYTHON_CMD% -m src.interactive_filter
+%PYTHON_CMD% -m src.interactive.filter
 
 :end
 echo.

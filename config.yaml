@@ -31,8 +31,12 @@ games:
   playstore_id: adventure.party.real.life
   platforms:
   - android
-- name: monopoly go
-  playstore_id: https://www.youtube.com/embed/43m_dNxYi6c?ps=play&vq=large&rel=0&autohide=1&showinfo=0
+- name: MONOPOLY GO!
+  playstore_id: com.scopely.monopolygo
+  platforms:
+  - android
+- name: 'Gossip Harbor: Merge & Story'
+  playstore_id: com.mergegames.gossipharbor
   platforms:
   - android
 scraper:

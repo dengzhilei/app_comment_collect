@@ -4,6 +4,9 @@ Google Play Store 评论采集模块
 import json
 import time
 import logging
+import urllib.parse
+import re
+import requests
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from pathlib import Path
@@ -14,15 +17,16 @@ except ImportError:
     tqdm = None
 
 try:
-    from google_play_scraper import app, reviews, Sort
+    from google_play_scraper import app, reviews, Sort, search
 except ImportError:
     try:
         # 尝试另一个可能的包名
-        from googleplay_scraper import app, reviews, Sort
+        from googleplay_scraper import app, reviews, Sort, search
     except ImportError:
         app = None
         reviews = None
         Sort = None
+        search = None
         logging.warning("google-play-scraper 未安装，请运行: pip install google-play-scraper")
 
 logger = logging.getLogger(__name__)
@@ -53,14 +57,183 @@ class PlayStoreScraper:
             logger.error(f"获取应用信息失败 {app_id}: {str(e)}")
             return None
     
-    def get_app_info(self, app_id: str, lang: str = 'en', country: str = 'us') -> Optional[Dict]:
-        """获取应用基本信息"""
+    def _fallback_search(self, query: str) -> List[str]:
+        """
+        备用搜索方法：直接请求Google Play网页版
+        返回找到的App ID列表
+        """
         try:
-            result = app(app_id, lang=lang, country=country)
-            return result
+            encoded_query = urllib.parse.quote(query)
+            url = f"https://play.google.com/store/search?q={encoded_query}&c=apps&hl=en&gl=us"
+            
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+            
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                return []
+                
+            html = response.text
+            # 匹配格式: /store/apps/details?id=com.example.app
+            pattern = r'/store/apps/details\?id=([a-zA-Z0-9_.]+)'
+            matches = re.findall(pattern, html)
+            
+            # 去重并保持顺序
+            unique_ids = []
+            seen = set()
+            for app_id in matches:
+                if app_id not in seen:
+                    unique_ids.append(app_id)
+                    seen.add(app_id)
+            
+            return unique_ids
         except Exception as e:
-            logger.error(f"获取应用信息失败 {app_id}: {str(e)}")
-            return None
+            logger.warning(f"备用搜索失败: {e}")
+            return []
+
+    def search_apps(
+        self,
+        query: str,
+        lang: str = 'en',
+        country: str = 'us',
+        num: int = 10
+    ) -> List[Dict]:
+        """
+        通过游戏名称搜索Google Play Store应用
+        
+        Args:
+            query: 搜索关键词（游戏名称）
+            lang: 语言代码
+            country: 国家代码
+            num: 返回结果数量（最多250）
+        
+        Returns:
+            应用列表，每个应用包含 appId, title, developer 等信息
+        """
+        if search is None:
+            logger.error("搜索功能不可用，请确保已安装 google-play-scraper")
+            return []
+        
+        try:
+            logger.info(f"正在搜索: {query}")
+            # 尝试不同的参数名以兼容不同版本的库
+            try:
+                results = search(
+                    query,
+                    lang=lang,
+                    country=country,
+                    n_hits=min(num, 250)  # 限制最多250个结果
+                )
+            except TypeError:
+                # 如果 n_hits 参数不存在，尝试其他参数名
+                try:
+                    results = search(
+                        query,
+                        lang=lang,
+                        country=country,
+                        num=min(num, 250)
+                    )
+                except TypeError:
+                    # 如果都不行，使用位置参数
+                    results = search(query, lang=lang, country=country)[:min(num, 250)]
+            
+            # 如果没有结果，或者第一个结果没有ID，尝试备用搜索
+            fallback_ids = []
+            need_fallback = False
+            
+            if not results:
+                need_fallback = True
+            elif not results[0].get('appId') and not results[0].get('url'):
+                 # 如果第一个结果既没有ID也没有URL，说明库解析失败，需要备用方案
+                 need_fallback = True
+            
+            if need_fallback:
+                logger.info("主要搜索未返回有效ID，尝试备用搜索...")
+                fallback_ids = self._fallback_search(query)
+                
+                # 如果主搜索完全没结果，尝试用备用ID构建简单结果
+                if not results and fallback_ids:
+                    for app_id in fallback_ids[:num]:
+                        results.append({
+                            'appId': app_id,
+                            'title': app_id, # 暂时用ID作为标题
+                            'developer': 'Unknown',
+                            'score': 0,
+                            'installs': '',
+                            'url': f'https://play.google.com/store/apps/details?id={app_id}'
+                        })
+
+            # 格式化结果
+            formatted_results = []
+            fallback_idx = 0
+            
+            for idx, result in enumerate(results, 1):
+                # 详细调试日志
+                logger.debug(f"Result {idx}: {result}")
+                
+                app_id = result.get('appId')
+                
+                # 如果appId为空，尝试从url解析
+                if not app_id:
+                    url = result.get('url')
+                    if url:
+                        # 尝试多种URL格式解析
+                        try:
+                            # 情况1: ...?id=com.example
+                            parsed_url = urllib.parse.urlparse(url)
+                            query_params = urllib.parse.parse_qs(parsed_url.query)
+                            if 'id' in query_params:
+                                app_id = query_params['id'][0]
+                            # 情况2: 直接是路径的一部分
+                            elif 'details' in url:
+                                match = re.search(r'id=([a-zA-Z0-9_.]+)', url)
+                                if match:
+                                    app_id = match.group(1)
+                        except Exception as e:
+                            logger.warning(f"URL解析失败: {e}")
+                
+                # 如果仍然为空，尝试使用备用搜索结果填补
+                if not app_id and fallback_ids and fallback_idx < len(fallback_ids):
+                    # 这里有一个假设：备用搜索结果的顺序与主搜索结果（如果是缺失ID的话）是对应的
+                    # 或者我们简单地将第一个备用ID赋给第一个缺失ID的结果
+                    logger.info(f"使用备用搜索ID填补第 {idx} 个结果: {fallback_ids[fallback_idx]}")
+                    app_id = fallback_ids[fallback_idx]
+                    fallback_idx += 1
+                
+                # 如果仍然为空，尝试按需调用备用搜索（如果还没调用过）
+                if not app_id and not fallback_ids and not need_fallback: # need_fallback为True说明已经搜过了
+                     # 针对单个缺失ID的结果进行一次特定搜索（使用其标题）
+                     item_title = result.get('title')
+                     if item_title:
+                         logger.info(f"尝试为 '{item_title}' 查找ID...")
+                         temp_ids = self._fallback_search(item_title)
+                         if temp_ids:
+                             app_id = temp_ids[0]
+                             logger.info(f"找到ID: {app_id}")
+
+                # 如果仍然为空，打印警告并跳过该结果
+                if not app_id or app_id == "未知ID":
+                    logger.warning(f"无法获取第 {idx} 个结果的App ID，跳过该结果。原始数据: {result}")
+                    continue
+
+                formatted_result = {
+                    'index': len(formatted_results) + 1,  # 重新编号
+                    'appId': app_id,
+                    'title': result.get('title', ''),
+                    'developer': result.get('developer', ''),
+                    'score': result.get('score', 0),
+                    'installs': result.get('installs', ''),
+                    'url': result.get('url', '')
+                }
+                formatted_results.append(formatted_result)
+            
+            logger.info(f"找到 {len(formatted_results)} 个匹配结果")
+            return formatted_results
+            
+        except Exception as e:
+            logger.error(f"搜索应用时出错: {str(e)}")
+            return []
     
     def get_reviews(
         self,
