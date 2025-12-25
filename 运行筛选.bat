@@ -27,52 +27,17 @@ REM 如果提供了命令行参数，直接使用
 if not "%1"=="" (
     echo 开始筛选: %1
     echo.
-    %PYTHON_CMD% main_simple_filter.py "%1"
+    %PYTHON_CMD% -m src.filter "%1"
     goto :end
 )
 
-REM 交互式输入
+REM 交互式输入 - 使用Python脚本从config.yaml动态读取配置
 echo ========================================
-echo 可用游戏列表:
-echo ========================================
-echo   1. Carnival Tycoon
-echo   2. TopTycoon
-echo   3. Animals ^& Coins
-echo   4. Fish of Fortune
-echo   5. Fishing Travel
-echo   6. Fishing Master
-echo   7. Cash Club
-echo   8. Sunday City: Life RolePlay
-echo   9. 自动使用最新的数据文件
-echo  10. 手动输入游戏名称
+echo 正在加载配置...
 echo ========================================
 echo.
 
-set /p GAME_CHOICE="请选择游戏 (1-10): "
-
-if "%GAME_CHOICE%"=="1" set GAME_NAME=Carnival Tycoon
-if "%GAME_CHOICE%"=="2" set GAME_NAME=TopTycoon
-if "%GAME_CHOICE%"=="3" set GAME_NAME=Animals & Coins
-if "%GAME_CHOICE%"=="4" set GAME_NAME=Fish of Fortune
-if "%GAME_CHOICE%"=="5" set GAME_NAME=Fishing Travel
-if "%GAME_CHOICE%"=="6" set GAME_NAME=Fishing Master
-if "%GAME_CHOICE%"=="7" set GAME_NAME=Cash Club
-if "%GAME_CHOICE%"=="8" set GAME_NAME=Sunday City: Life RolePlay
-if "%GAME_CHOICE%"=="9" set GAME_NAME=
-if "%GAME_CHOICE%"=="10" (
-    set /p GAME_NAME="请输入游戏名称: "
-)
-
-echo.
-if "%GAME_NAME%"=="" (
-    echo 将自动查找最新的数据文件...
-    echo.
-    %PYTHON_CMD% main_simple_filter.py
-) else (
-    echo 开始筛选: %GAME_NAME%
-    echo.
-    %PYTHON_CMD% main_simple_filter.py "%GAME_NAME%"
-)
+%PYTHON_CMD% -m src.interactive_filter
 
 :end
 echo.

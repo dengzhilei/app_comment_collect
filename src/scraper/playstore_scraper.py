@@ -53,6 +53,15 @@ class PlayStoreScraper:
             logger.error(f"获取应用信息失败 {app_id}: {str(e)}")
             return None
     
+    def get_app_info(self, app_id: str, lang: str = 'en', country: str = 'us') -> Optional[Dict]:
+        """获取应用基本信息"""
+        try:
+            result = app(app_id, lang=lang, country=country)
+            return result
+        except Exception as e:
+            logger.error(f"获取应用信息失败 {app_id}: {str(e)}")
+            return None
+    
     def get_reviews(
         self,
         app_id: str,

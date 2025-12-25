@@ -1,7 +1,7 @@
 """
 通用评论采集脚本
-使用方法: python 采集评论.py <游戏名称> [开始日期] [结束日期]
-示例: python 采集评论.py "TopTycoon" 2025-09-01 2025-12-31
+使用方法: python -m src.scrape <游戏名称> [开始日期] [结束日期]
+示例: python -m src.scrape "TopTycoon" 2025-09-01 2025-12-31
 """
 import logging
 import json
@@ -29,9 +29,9 @@ def main():
     """主函数"""
     # 解析命令行参数
     if len(sys.argv) < 2:
-        logger.error("使用方法: python 采集评论.py <游戏名称> [开始日期] [结束日期]")
-        logger.error("示例: python 采集评论.py \"TopTycoon\" 2025-09-01 2025-12-31")
-        logger.error("示例: python 采集评论.py \"Sunday City: Life RolePlay\"")
+        logger.error("使用方法: python -m src.scrape <游戏名称> [开始日期] [结束日期]")
+        logger.error("示例: python -m src.scrape \"TopTycoon\" 2025-09-01 2025-12-31")
+        logger.error("示例: python -m src.scrape \"Sunday City: Life RolePlay\"")
         return
     
     game_name = sys.argv[1]

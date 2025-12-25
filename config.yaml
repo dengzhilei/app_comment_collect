@@ -1,49 +1,46 @@
-# 游戏配置
 games:
-  - name: "Carnival Tycoon"
-    playstore_id: "com.solitairetripeaks.masterdesign"
-    platforms: ["android"]
-  
-  - name: "TopTycoon"
-    playstore_id: "com.monopoly.dream.idle.king"
-    platforms: ["android"]
-  
-  - name: "Animals & Coins"
-    playstore_id: "com.innplaylabs.animalkingdomraid"
-    platforms: ["android"]
-  
-  - name: "Fish of Fortune"
-    playstore_id: "com.whalo.games.fishoffortune"
-    platforms: ["android"]
-
-  - name: "Fishing Travel"
-    playstore_id: "com.arkgame.ft"
-    platforms: ["android"]
-
-  - name: "Fishing Master"
-    playstore_id: "com.arkgame.fishingmaster"
-    platforms: ["android"]
-
-  - name: "Cash Club"
-    playstore_id: "com.unicornstudio.cashparty.slots.casino.vegas.free"
-    platforms: ["android"]
-
-  - name: "Sunday City: Life RolePlay"
-    playstore_id: "adventure.party.real.life"
-    platforms: ["android"]
-
-# 采集配置
+- name: Carnival Tycoon
+  playstore_id: com.solitairetripeaks.masterdesign
+  platforms:
+  - android
+- name: TopTycoon
+  playstore_id: com.monopoly.dream.idle.king
+  platforms:
+  - android
+- name: Animals & Coins
+  playstore_id: com.innplaylabs.animalkingdomraid
+  platforms:
+  - android
+- name: Fish of Fortune
+  playstore_id: com.whalo.games.fishoffortune
+  platforms:
+  - android
+- name: Fishing Travel
+  playstore_id: com.arkgame.ft
+  platforms:
+  - android
+- name: Fishing Master
+  playstore_id: com.arkgame.fishingmaster
+  platforms:
+  - android
+- name: Cash Club
+  playstore_id: com.unicornstudio.cashparty.slots.casino.vegas.free
+  platforms:
+  - android
+- name: 'Sunday City: Life RolePlay'
+  playstore_id: adventure.party.real.life
+  platforms:
+  - android
+- name: monopoly go
+  playstore_id: https://www.youtube.com/embed/43m_dNxYi6c?ps=play&vq=large&rel=0&autohide=1&showinfo=0
+  platforms:
+  - android
 scraper:
-  time_range_days: 365  # 最近一年（默认值，实际使用时会根据命令行参数覆盖）
-  max_reviews_per_game: 5000  # 每个游戏最多采集的评论数
-  delay_between_requests: 2  # 请求间隔（秒）
-  retry_times: 3  # 重试次数
-  # 地区配置（可以配置多个地区，会为每个地区分别采集）
+  time_range_days: 365
+  max_reviews_per_game: 5000
+  delay_between_requests: 2
+  retry_times: 3
   regions:
-    - name: "美国"
-      lang: "en"  # 语言代码: en(英文), zh(中文), ja(日文)等
-      country: "us"  # 国家代码: us(美国), cn(中国), jp(日本)等
-    # 如果需要采集多个地区，取消下面的注释
-    # - name: "中国"
-    #   lang: "zh"
-    #   country: "cn"
+  - name: 美国
+    lang: en
+    country: us

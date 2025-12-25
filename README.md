@@ -45,7 +45,7 @@ games:
 
 **方法三：直接运行Python脚本**
 ```bash
-python 采集评论.py "游戏名称" [开始日期] [结束日期]
+python -m src.scrape "游戏名称" [开始日期] [结束日期]
 ```
 
 **示例：**
@@ -79,7 +79,7 @@ python 采集评论.py "游戏名称" [开始日期] [结束日期]
 
 **方法三：直接运行Python脚本**
 ```bash
-python main_simple_filter.py "游戏名称"
+python -m src.filter "游戏名称"
 ```
 
 **示例：**
@@ -190,8 +190,12 @@ scraper:
 ├── output/                 # 输出文件
 │   └── reports/           # 筛选结果
 ├── config.yaml            # 配置文件
-├── 采集评论.py            # 采集脚本
-├── main_simple_filter.py   # 筛选脚本
+├── src/                   # 源代码
+│   ├── scrape.py         # 采集脚本
+│   ├── filter.py         # 筛选脚本
+│   ├── scraper/          # 采集模块
+│   ├── processor/        # 数据处理模块
+│   └── analyzer/         # 分析模块
 ├── 运行采集.bat           # 采集批处理文件
 ├── 运行筛选.bat           # 筛选批处理文件
 └── requirements.txt       # Python依赖

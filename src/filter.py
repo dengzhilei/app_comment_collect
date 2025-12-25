@@ -1,5 +1,6 @@
 """
 简单筛选脚本 - 粗筛有意义的评论并输出到文档
+使用方法: python -m src.filter [游戏名称]
 """
 import logging
 import json
@@ -159,8 +160,8 @@ def main(game_name: str = None):
         logger.info(f"  最低分: {df_sorted['score'].min():.1f}")
         logger.info(f"  中位数: {df_sorted['score'].median():.1f}")
     
-    # 步骤4: 生成输出文档
-    logger.info("\n步骤4: 生成输出文档...")
+    # 步骤5: 生成输出文档
+    logger.info("\n步骤5: 生成输出文档...")
     
     # 从输入文件名提取时间范围信息
     input_file_name = Path(data_file).stem  # 获取不带扩展名的文件名
@@ -261,7 +262,7 @@ if __name__ == "__main__":
     import sys
     
     # 支持命令行参数指定游戏名称
-    # 用法: python main_simple_filter.py TopTycoon
+    # 用法: python -m src.filter TopTycoon
     game_name = None
     if len(sys.argv) > 1:
         game_name = sys.argv[1]
