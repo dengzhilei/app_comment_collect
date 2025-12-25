@@ -98,17 +98,6 @@ class HolisticDesignScorer:
             r'\bneed(s)?\b', r'\bshould\b'        # 需要/应该
         ]
 
-        # ==============================================================================
-        # 5. 垃圾过滤 (Trash Filter) - 过滤纯技术报错和垃圾评论
-        # ==============================================================================
-        self.keywords_trash = [
-            r'\bcrash\b', r'\blag\b', r'\bwont load\b', r'\bblack screen\b',
-            r'\brefund\b', r'\bscam\b',           # 诈骗/退款
-            r'\bdelete(?:d)?\b',                  # 删除
-            r'\bwaste\s*(of\s*)?time\b',          # 浪费时间
-            r'\bworst\b', r'\bterrible\b',        # 最差/糟糕
-            r'\buninstall(?:ed)?\b'               # 卸载
-        ]
 
     def calculate_score(self, text: str, rating: int) -> Tuple[float, Dict]:
         """
@@ -124,24 +113,23 @@ class HolisticDesignScorer:
         score = 0
         details = {}
         
-        # 1. 评分逻辑：4-5星好评有正向价值，3星理性评有深度建议价值
-        if rating >= 5:
-            score += 18  # 5星好评，最高权重
-        elif rating == 4:
-            score += 15  # 4星好评
+        # 1. 评分逻辑：强调2-4星，4星>3星>2星，1星和5星不加分
+        if rating == 4:
+            score += 12  # 4星，最高权重
         elif rating == 3:
-            score += 12  # 3星理性评，可能有建设性意见
+            score += 10  # 3星，次之
         elif rating == 2:
-            score -= 3   # 2星差评，轻微扣分
-        else:
-            score -= 8   # 1星差评，较大扣分（除非内容特别好）
+            score += 8  # 2星，最低
+        # 1星和5星不加分也不扣分
             
-        # 2. 情绪分 (The "Why") - 降低权重，因为太常见
-        count_emo = sum(1 for p in self.keywords_emotion if re.search(p, text, re.IGNORECASE))
-        s_emo = min(count_emo * 5, 20)  # 每个5分，最高20分（降低权重）
-        score += s_emo
-        if s_emo > 0: 
-            details['emotion'] = s_emo
+        # 2. 情绪分 (The "Why") - 仅足够长文才有少量加分（大于100字符）
+        text_len = len(text)
+        if text_len > 100: 
+            count_emo = sum(1 for p in self.keywords_emotion if re.search(p, text, re.IGNORECASE))
+            s_emo = min(count_emo * 3, 12)  # 每个3分，最高12分（降低权重，仅长文）
+            score += s_emo
+            if s_emo > 0: 
+                details['emotion'] = s_emo
 
         # 3. 感官细节分 (The "Feel") - 重点，保持高权重
         # 这是捕捉"动画"、"震动"、"手感"的关键
@@ -165,26 +153,20 @@ class HolisticDesignScorer:
         if s_wish > 0: 
             details['wishlist'] = s_wish
 
-        # 6. 长度微调 - 优化长度评分曲线
-        # 50-300字符最佳，过长反而可能冗余
-        text_len = len(text)
+        # 6. 长度评分 - 提升权重，超长不扣分
+        # 长度越长越好，不设上限扣分
         if text_len < 50:
-            len_score = text_len / 3  # 短评论按比例给分
-        elif text_len <= 300:
-            len_score = 16 + (text_len - 50) / 25  # 50-300字符区间，最高24分
+            len_score = text_len / 2  # 短评论按比例给分
+        elif text_len <= 200:
+            len_score = 25 + (text_len - 50) / 10  # 50-200字符区间，最高40分
+        elif text_len <= 500:
+            len_score = 40 + (text_len - 200) / 15  # 200-500字符区间，最高60分
         else:
-            len_score = 24 - (text_len - 300) / 50  # 超过300字符，逐渐减分
-            len_score = max(len_score, 15)  # 最低15分
+            len_score = 60 + (text_len - 500) / 20  # 超过500字符，继续加分但增速放缓
+            len_score = min(len_score, 100)  # 最高100分，避免过长评论分数过高
         
         score += len_score
         details['length'] = round(len_score, 1)
-
-        # 7. 垃圾过滤 - 更严格的惩罚
-        count_trash = sum(1 for p in self.keywords_trash if re.search(p, text, re.IGNORECASE))
-        if count_trash > 0:
-            penalty = count_trash * 25  # 每个垃圾词扣25分（提高惩罚）
-            score -= penalty
-            details['trash_penalty'] = -penalty
 
         return round(score, 1), details
 
@@ -196,7 +178,7 @@ class ReviewFilter:
         """初始化筛选器"""
         self.scorer = HolisticDesignScorer()
     
-    def filter_by_length(self, df: pd.DataFrame, min_length: int = 30) -> pd.DataFrame:
+    def filter_by_length(self, df: pd.DataFrame, min_length: int = 50) -> pd.DataFrame:
         """
         第一步：简单长度过滤
         
@@ -257,19 +239,6 @@ class ReviewFilter:
         logger.info(f"评分完成，平均分: {df['score'].mean():.1f}, 最高分: {df['score'].max():.1f}, 最低分: {df['score'].min():.1f}")
         
         return df
-    
-    def filter_meaningful_reviews(self, df: pd.DataFrame, min_length: int = 20) -> pd.DataFrame:
-        """
-        筛选有意义的评论（保留此方法以兼容旧代码）
-        
-        Args:
-            df: 评论DataFrame
-            min_length: 最小长度要求
-        
-        Returns:
-            筛选后的DataFrame
-        """
-        return self.filter_by_length(df, min_length)
 
 
 if __name__ == "__main__":
@@ -287,7 +256,14 @@ if __name__ == "__main__":
         'rating': [5, 1, 4, 5]
     })
     
-    filtered = filter_tool.filter_meaningful_reviews(test_reviews)
-    print(f"筛选后: {len(filtered)} 条")
+    # 测试长度过滤
+    filtered = filter_tool.filter_by_length(test_reviews, min_length=20)
+    print(f"长度过滤后: {len(filtered)} 条")
     print(filtered[['content_cleaned', 'rating']])
+    
+    # 测试评分
+    if len(filtered) > 0:
+        scored = filter_tool.score_reviews(filtered)
+        print(f"\n评分后:")
+        print(scored[['content_cleaned', 'rating', 'score']])
 

@@ -138,7 +138,7 @@ def main(game_name: str = None):
     # 步骤2: 第一步筛选 - 简单长度过滤
     logger.info("\n步骤2: 第一步筛选 - 长度过滤...")
     review_filter = ReviewFilter()
-    df_filtered = review_filter.filter_by_length(df, min_length=30)
+    df_filtered = review_filter.filter_by_length(df, min_length=50)
     logger.info(f"长度过滤后: {len(df_filtered)} 条")
     
     # 步骤3: 第二步筛选 - 权重评分
@@ -209,27 +209,7 @@ def main(game_name: str = None):
 def generate_simple_text(df: pd.DataFrame, game_name: str = "游戏") -> str:
     """生成简化版文本，方便复制给AI"""
     
-    text = f"""我是一名游戏设计师，正在研究 {game_name} 这款游戏的商店评论区内容。这些评论来自2025年9-12月期间的玩家反馈。
-
-请注意：我并不是这个app的制作商，我是在研究这款游戏，希望从玩家评论中：
-1. 提取值得我借鉴的游戏设计思路和机制
-2. 加深对玩家心理、需求和期望的理解
-3. 了解玩家对这类游戏的兴奋点和痛点
-4. 学习玩家喜欢或不喜欢的设计元素
-
-我不太关心：
-- 具体的Bug修复细节（除非能反映设计问题）
-- 这个游戏特有的功能实现（除非有设计启发）
-- 针对这个游戏的具体改进建议
-
-我更关心：
-- 玩家为什么会兴奋/沮丧？（情绪背后的设计原因）
-- 哪些设计元素让玩家印象深刻？
-- 玩家对游戏机制的期望和反馈模式
-- 可以应用到我的游戏设计中的洞察
-
-请帮我从这 {len(df)} 条精选评论中，提炼出对游戏设计师有价值的内容。
-
+    text = f"""
 ---
 
 精选评论列表：
