@@ -135,30 +135,29 @@ def main(game_name: str = None):
     df = cleaner.process_dataframe(df)
     logger.info(f"清洗后: {len(df)} 条")
     
-    # 步骤2: 智能筛选
-    logger.info("\n步骤2: 智能筛选有意义的评论...")
+    # 步骤2: 第一步筛选 - 简单长度过滤
+    logger.info("\n步骤2: 第一步筛选 - 长度过滤...")
     review_filter = ReviewFilter()
-    df_filtered = review_filter.filter_meaningful_reviews(df, min_length=30)  # 提高最小长度要求
-    logger.info(f"筛选后: {len(df_filtered)} 条")
+    df_filtered = review_filter.filter_by_length(df, min_length=30)
+    logger.info(f"长度过滤后: {len(df_filtered)} 条")
     
-    # 步骤3: 进一步筛选 - 按评分和长度排序，优先保留有价值的评论
-    logger.info("\n步骤3: 按价值排序...")
+    # 步骤3: 第二步筛选 - 权重评分
+    logger.info("\n步骤3: 第二步筛选 - 权重评分...")
+    df_scored = review_filter.score_reviews(df_filtered)
     
-    # 计算价值分数：极端评分 + 长评论 + 包含问题描述
-    df_filtered = df_filtered.copy()
-    df_filtered['value_score'] = (
-        abs(df_filtered['rating'] - 3) * 2 +  # 极端评分（1星或5星）更有价值
-        (df_filtered['content_cleaned'].str.len() / 50) +  # 长评论更有价值
-        df_filtered['content_cleaned'].str.lower().str.contains(
-            r'(bug|problem|issue|fix|need|should|improve|add|remove|change|broken|crash|error)',
-            regex=False, na=False  # 修复警告：明确指定regex=False
-        ).astype(int) * 3  # 包含问题/建议关键词的更有价值
-    )
-    
-    # 排序并选择Top评论
-    max_reviews = min(500, len(df_filtered))  # 最多保留500条
-    df_sorted = df_filtered.nlargest(max_reviews, 'value_score')
+    # 步骤4: 选择前500条
+    logger.info("\n步骤4: 选择前500条高价值评论...")
+    max_reviews = min(500, len(df_scored))
+    df_sorted = df_scored.nlargest(max_reviews, 'score')
     logger.info(f"最终保留: {len(df_sorted)} 条高价值评论")
+    
+    # 输出评分统计
+    if len(df_sorted) > 0:
+        logger.info(f"\n评分统计:")
+        logger.info(f"  平均分: {df_sorted['score'].mean():.1f}")
+        logger.info(f"  最高分: {df_sorted['score'].max():.1f}")
+        logger.info(f"  最低分: {df_sorted['score'].min():.1f}")
+        logger.info(f"  中位数: {df_sorted['score'].median():.1f}")
     
     # 步骤4: 生成输出文档
     logger.info("\n步骤4: 生成输出文档...")
@@ -199,7 +198,7 @@ def main(game_name: str = None):
     logger.info("="*60)
     logger.info(f"原始评论: {len(reviews)} 条")
     logger.info(f"清洗后: {len(df)} 条")
-    logger.info(f"筛选后: {len(df_filtered)} 条")
+    logger.info(f"长度过滤后: {len(df_filtered)} 条")
     logger.info(f"最终精选: {len(df_sorted)} 条")
     logger.info(f"\n输出文件:")
     logger.info(f"  - 精选评论: {output_file}")
@@ -237,8 +236,8 @@ def generate_simple_text(df: pd.DataFrame, game_name: str = "游戏") -> str:
 
 """
     
-    # 按价值分数排序
-    df_sorted = df.sort_values('value_score', ascending=False)
+    # 按评分排序
+    df_sorted = df.sort_values('score', ascending=False)
     
     for idx, (_, row) in enumerate(df_sorted.iterrows(), 1):
         rating = row.get('rating', 'N/A')
@@ -256,7 +255,20 @@ def generate_simple_text(df: pd.DataFrame, game_name: str = "游戏") -> str:
         else:
             date = 'N/A'
         
-        text += f"\n[评论 {idx}] 评分: {rating}/5 | 日期: {date}\n"
+        # 获取评分详情
+        score = row.get('score', 'N/A')
+        score_details = row.get('score_details', {})
+        
+        # 格式化评分详情
+        detail_parts = []
+        if isinstance(score_details, dict):
+            for key, value in score_details.items():
+                if key != 'length':  # 长度分单独显示
+                    detail_parts.append(f"{key}: {value}")
+        
+        detail_str = f" | {', '.join(detail_parts)}" if detail_parts else ""
+        
+        text += f"\n[评论 {idx}] 评分: {rating}/5 | 综合分: {score}{detail_str} | 日期: {date}\n"
         text += f"{content}\n"
         text += "-" * 80 + "\n"
     
