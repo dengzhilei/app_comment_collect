@@ -42,7 +42,7 @@ data/*.db
 !data/analysis/.gitkeep
 
 # 输出文件
-output/reports/*
+output/*
 output/charts/*
 !output/reports/.gitkeep
 !output/charts/.gitkeep

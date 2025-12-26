@@ -51,6 +51,10 @@ games:
   playstore_id: slots.pcg.casino.games.free.android
   platforms:
   - android
+- name: Royal Match
+  playstore_id: com.dreamgames.royalmatch
+  platforms:
+  - android
 scraper:
   time_range_days: 365
   max_reviews_per_game: 5000
