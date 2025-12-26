@@ -39,6 +39,18 @@ games:
   playstore_id: com.mergegames.gossipharbor
   platforms:
   - android
+- name: Truck Star
+  playstore_id: com.vm3.global
+  platforms:
+  - android
+- name: Dice Dreams™️
+  playstore_id: com.superplaystudios.dicedreams
+  platforms:
+  - android
+- name: Cash Frenzy™ - Casino Slots
+  playstore_id: slots.pcg.casino.games.free.android
+  platforms:
+  - android
 scraper:
   time_range_days: 365
   max_reviews_per_game: 5000
