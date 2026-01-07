@@ -404,8 +404,10 @@ def main():
             print("\n已取消")
             return
     
-    # 生成输出文件名
-    output_file = reports_dir / f"{selected_file.stem}_中文.txt"
+    # 生成输出文件名（保存到reports_chs目录）
+    chs_reports_dir = Path("output/reports_chs")
+    chs_reports_dir.mkdir(exist_ok=True)
+    output_file = chs_reports_dir / f"{selected_file.stem}_中文.txt"
     
     # 确认翻译
     print(f"\n{'='*60}")

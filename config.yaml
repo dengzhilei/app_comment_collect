@@ -55,6 +55,26 @@ games:
   playstore_id: com.dreamgames.royalmatch
   platforms:
   - android
+- name: Merge Cooking®
+  playstore_id: com.merge.cooking.theme.restaurant.food
+  platforms:
+  - android
+- name: Cash Rally - Slots Casino Game
+  playstore_id: slots.acg.casino.games.free.android
+  platforms:
+  - android
+- name: Jackpotland-Vegas Casino Slots
+  playstore_id: com.slots.free.vegas.casino.jackpotland
+  platforms:
+  - android
+- name: Hay Day
+  playstore_id: com.supercell.hayday
+  platforms:
+  - android
+- name: Township
+  playstore_id: com.playrix.township
+  platforms:
+  - android
 scraper:
   time_range_days: 365
   max_reviews_per_game: 5000

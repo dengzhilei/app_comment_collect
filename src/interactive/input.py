@@ -105,7 +105,7 @@ def display_games_menu(games, extra_options=None, search_first=False):
 
 
 def interactive_scrape_input():
-    """交互式采集输入"""
+    """交互式采集输入（默认使用搜索）"""
     config = load_config()
     games = get_games_list(config)
     
@@ -113,23 +113,39 @@ def interactive_scrape_input():
         print("错误: 配置文件中没有游戏列表！")
         sys.exit(1)
     
-    # 添加搜索选项（固定在第一位）
-    extra_options = [
-        (1, "搜索游戏ID（通过游戏名查找）")
-    ]
+    # 默认直接使用搜索功能
+    print("=" * 60)
+    print("评论采集与筛选工具")
+    print("=" * 60)
+    print()
+    print("提示: 默认使用搜索功能，如需从配置文件选择游戏，请输入 'c'")
+    print()
     
-    # 显示菜单并获取选择（搜索选项显示在第一位）
-    game_name = display_games_menu(games, extra_options=extra_options, search_first=True)
+    # 询问用户选择模式
+    mode_choice = input("请选择模式 (直接按Enter使用搜索，或输入 'c' 从配置文件选择): ").strip().lower()
     
-    # 如果选择了搜索选项
-    if game_name == "搜索游戏ID（通过游戏名查找）":
+    if mode_choice == 'c':
+        # 从配置文件选择游戏
+        extra_options = [
+            (1, "搜索游戏ID（通过游戏名查找）")
+        ]
+        game_name = display_games_menu(games, extra_options=extra_options, search_first=True)
+        
+        # 如果选择了搜索选项
+        if game_name == "搜索游戏ID（通过游戏名查找）":
+            game_name = search_and_select_game()
+            if not game_name:
+                print("错误: 未选择游戏或搜索失败")
+                sys.exit(1)
+        elif not game_name:
+            print("错误: 未选择游戏或选择无效")
+            sys.exit(1)
+    else:
+        # 默认直接使用搜索
         game_name = search_and_select_game()
         if not game_name:
             print("错误: 未选择游戏或搜索失败")
             sys.exit(1)
-    elif not game_name:
-        print("错误: 未选择游戏或选择无效")
-        sys.exit(1)
     
     print()
     print(f"已选择游戏: {game_name}")
