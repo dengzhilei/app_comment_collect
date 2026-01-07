@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>钓鱼棋盘游戏</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- 游戏标题 -->
+        <header class="game-header">
+            <h1>🎣 钓鱼棋盘游戏</h1>
+            <button id="gm-toggle-btn" class="gm-toggle-btn" title="按G键打开GM面板">⚙️ GM</button>
+        </header>
+
+        <!-- 主游戏区域 -->
+        <div class="main-game-area">
+            <!-- 左侧：玩家信息面板 -->
+            <aside class="player-panel">
+                <div class="player-info">
+                    <h2>玩家信息</h2>
+                    <!-- 潮汐状态显示 -->
+                    <div id="tide-status" class="tide-status normal">
+                        <span class="tide-icon">🌊</span>
+                        <span id="tide-name">平潮</span>
+                        <span id="tide-counter" class="tide-counter">10回合后变化</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <span class="stat-label">💰 金钱:</span>
+                        <span id="money" class="stat-value">100</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">🎲 骰子:</span>
+                        <span id="dice-count" class="stat-value">5</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">📍 位置:</span>
+                        <span id="player-position" class="stat-value">0</span>
+                    </div>
+                </div>
+
+                <div class="action-panel">
+                    <h3>操作</h3>
+                    <div class="auto-sell-control">
+                        <label>
+                            <input type="checkbox" id="auto-sell-check"> 自动卖鱼
+                        </label>
+                    </div>
+                    <button id="roll-dice-btn" class="action-btn">🎲 掷骰子 (消耗1个骰子)</button>
+                    <!-- <button id="fish-btn" class="action-btn" disabled>🎣 钓鱼</button> -->
+                    <button id="sell-fish-btn" class="action-btn" disabled>💰 卖鱼</button>
+                </div>
+
+                <div class="inventory-panel">
+                    <h3>鱼获库存</h3>
+                    <div id="fish-inventory" class="inventory-list">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 中间：棋盘区域 -->
+            <main class="board-area">
+                <div class="board-container">
+                    <canvas id="game-board" width="600" height="600"></canvas>
+                </div>
+                <div class="dice-display">
+                    <div id="dice-result" class="dice-result">等待掷骰子...</div>
+                </div>
+            </main>
+
+            <!-- 右侧：建造面板 -->
+            <aside class="build-panel">
+                <div class="build-info">
+                    <h2>建造设施</h2>
+                    <div id="build-list" class="build-list">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+
+                <div class="game-log">
+                    <h3>游戏日志</h3>
+                    <div id="log-content" class="log-content">
+                        <div class="log-entry">欢迎来到钓鱼棋盘游戏！</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- GM面板 -->
+    <div id="gm-panel" class="gm-panel hidden">
+        <div class="gm-panel-header">
+            <h2>🎮 GM控制面板</h2>
+            <button id="gm-close-btn" class="gm-close-btn">×</button>
+        </div>
+        <div class="gm-panel-content">
+            <div class="gm-section">
+                <h3>💰 金钱</h3>
+                <div class="gm-control-group">
+                    <input type="number" id="gm-money-input" class="gm-input" value="100" min="0">
+                    <button class="gm-btn" data-action="add-money">+100</button>
+                    <button class="gm-btn" data-action="add-money-500">+500</button>
+                    <button class="gm-btn" data-action="add-money-1000">+1000</button>
+                </div>
+            </div>
+            
+            <div class="gm-section">
+                <h3>🎲 骰子</h3>
+                <div class="gm-control-group">
+                    <input type="number" id="gm-dice-input" class="gm-input" value="5" min="0">
+                    <button class="gm-btn" data-action="add-dice">+5</button>
+                    <button class="gm-btn" data-action="add-dice-10">+10</button>
+                    <button class="gm-btn" data-action="add-dice-20">+20</button>
+                </div>
+            </div>
+            
+            <div class="gm-section">
+                <h3>🎣 鱼获</h3>
+                <div class="gm-control-group">
+                    <select id="gm-fish-select" class="gm-select">
+                        <option value="小黄鱼">小黄鱼</option>
+                        <option value="带鱼">带鱼</option>
+                        <option value="鲈鱼">鲈鱼</option>
+                        <option value="金枪鱼">金枪鱼</option>
+                        <option value="三文鱼">三文鱼</option>
+                    </select>
+                    <input type="number" id="gm-fish-count" class="gm-input" value="1" min="1" max="99">
+                    <button class="gm-btn" data-action="add-fish">添加</button>
+                </div>
+            </div>
+            
+            <div class="gm-section">
+                <h3>📍 位置</h3>
+                <div class="gm-control-group">
+                    <input type="number" id="gm-position-input" class="gm-input" value="0" min="0" max="19">
+                    <button class="gm-btn" data-action="set-position">传送到</button>
+                </div>
+            </div>
+            
+            <div class="gm-section">
+                <h3>🏗️ 建造</h3>
+                <div class="gm-control-group">
+                    <button class="gm-btn" data-action="build-all">建造所有设施</button>
+                    <button class="gm-btn" data-action="clear-buildings">清除所有设施</button>
+                </div>
+            </div>
+            
+            <div class="gm-section">
+                <h3>⚡ 快捷操作</h3>
+                <div class="gm-control-group">
+                    <button class="gm-btn gm-btn-primary" data-action="max-resources">资源拉满</button>
+                    <button class="gm-btn" data-action="reset-game">重置游戏</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>深海猎手 - 弓箭射鱼</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui-layer">
+            <div id="score-board">分数: <span id="score">0</span></div>
+            <div id="timer-board">时间: <span id="time">60</span></div>
+            <div id="game-over-screen" class="hidden">
+                <h1>时间到!</h1>
+                <p>最终得分: <span id="final-score">0</span></p>
+                <button id="restart-btn">再次挑战</button>
+            </div>
+            <div id="start-screen">
+                <h1>深海猎手</h1>
+                <p>按住屏幕蓄力，松开射箭</p>
+                <button id="start-btn">开始捕鱼</button>
+            </div>
+        </div>
+    </div>
+    <!-- 移除 type="module"，按依赖顺序加载 -->
+    <script src="js/Config.js"></script>
+    <script src="js/Entities.js"></script>
+    <script src="js/Game.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

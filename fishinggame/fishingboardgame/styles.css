@@ -1,0 +1,491 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.game-container {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.game-header {
+    text-align: center;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.game-header {
+    position: relative;
+}
+
+.game-header h1 {
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.gm-toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s;
+}
+
+.gm-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.main-game-area {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 20px;
+    height: calc(100vh - 150px);
+}
+
+/* 玩家面板 */
+.player-panel, .build-panel {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    overflow-y: auto;
+}
+
+.player-panel h2, .build-panel h2 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+}
+
+/* 潮汐状态样式 */
+.tide-status {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+    transition: all 0.5s;
+}
+
+.tide-status.normal {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.tide-status.high-tide {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+    box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
+}
+
+.tide-status.low-tide {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+}
+
+.tide-icon {
+    font-size: 1.5em;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+#tide-name {
+    font-weight: bold;
+    font-size: 1.2em;
+    vertical-align: middle;
+}
+
+.tide-counter {
+    display: block;
+    font-size: 0.8em;
+    margin-top: 5px;
+    opacity: 0.9;
+}
+
+.player-panel h3, .build-panel h3 {
+    color: #764ba2;
+    margin: 20px 0 10px 0;
+    font-size: 1.1em;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    margin: 8px 0;
+    background: #f5f5f5;
+    border-radius: 8px;
+    font-size: 1.1em;
+}
+
+.stat-label {
+    font-weight: bold;
+    color: #555;
+}
+
+.stat-value {
+    color: #667eea;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.action-panel {
+    margin-top: 20px;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.action-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.action-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.inventory-panel {
+    margin-top: 20px;
+}
+
+.inventory-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.inventory-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    margin: 5px 0;
+    background: #e8f4f8;
+    border-radius: 6px;
+    border-left: 4px solid #667eea;
+}
+
+/* 棋盘区域 */
+.board-area {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.board-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+#game-board {
+    border: 3px solid #667eea;
+    border-radius: 10px;
+    background: #f0f8ff;
+}
+
+.dice-display {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.dice-result {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #667eea;
+    padding: 15px 30px;
+    background: #f5f5f5;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+/* 建造面板 */
+.build-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.build-item {
+    padding: 15px;
+    margin: 10px 0;
+    background: #f5f5f5;
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s;
+}
+
+.build-item:hover {
+    border-color: #667eea;
+    transform: translateX(5px);
+}
+
+.build-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.build-item-name {
+    font-weight: bold;
+    color: #667eea;
+    font-size: 1.1em;
+}
+
+.build-item-cost {
+    color: #764ba2;
+    font-weight: bold;
+}
+
+.build-item-desc {
+    color: #666;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.build-item-btn {
+    width: 100%;
+    padding: 8px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.build-item-btn:hover:not(:disabled) {
+    background: #764ba2;
+    transform: translateY(-2px);
+}
+
+.build-item-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* 游戏日志 */
+.game-log {
+    margin-top: 20px;
+}
+
+.log-content {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 0.9em;
+}
+
+.log-entry {
+    padding: 5px 0;
+    color: #555;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+/* 响应式设计 */
+@media (max-width: 1400px) {
+    .main-game-area {
+        grid-template-columns: 250px 1fr 250px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .main-game-area {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+    }
+    
+    .player-panel, .build-panel {
+        max-height: 300px;
+    }
+}
+
+/* GM面板样式 */
+.gm-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    max-height: 80vh;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.gm-panel.hidden {
+    display: none;
+}
+
+.gm-panel-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gm-panel-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.gm-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 2em;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    line-height: 1;
+    padding: 0;
+}
+
+.gm-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.gm-panel-content {
+    padding: 20px;
+    overflow-y: auto;
+    max-height: calc(80vh - 80px);
+}
+
+.gm-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.gm-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.gm-section h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.gm-control-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.gm-input, .gm-select {
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1em;
+    min-width: 80px;
+    transition: all 0.3s;
+}
+
+.gm-input:focus, .gm-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.gm-select {
+    flex: 1;
+    min-width: 120px;
+}
+
+.gm-btn {
+    padding: 10px 15px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: bold;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.gm-btn:hover {
+    background: #764ba2;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.gm-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 12px 20px;
+    font-size: 1em;
+}
+
+.gm-btn-primary:hover {
+    transform: translateY(-2px) scale(1.05);
+}
+
+/* GM面板遮罩 */
+.gm-panel::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+    margin: -50vh -50vw;
+    width: 200vw;
+    height: 200vh;
+}
+

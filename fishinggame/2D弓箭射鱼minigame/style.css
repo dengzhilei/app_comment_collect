@@ -1,0 +1,95 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #001f3f; /* 深海蓝 */
+    font-family: 'Arial', sans-serif;
+    touch-action: none; /* 禁止浏览器默认触摸行为 */
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas {
+    display: block;
+    background: linear-gradient(to bottom, #0074D9, #001f3f);
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* 让点击穿透到 Canvas */
+}
+
+#score-board, #timer-board {
+    position: absolute;
+    top: 20px;
+    font-size: 24px;
+    color: white;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+#score-board {
+    left: 20px;
+}
+
+#timer-board {
+    right: 20px;
+}
+
+#game-over-screen, #start-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    pointer-events: auto; /* 恢复点击 */
+}
+
+.hidden {
+    display: none !important;
+}
+
+h1 {
+    font-size: 48px;
+    margin-bottom: 10px;
+    color: #FFDC00;
+}
+
+p {
+    font-size: 24px;
+    margin-bottom: 30px;
+}
+
+button {
+    padding: 15px 40px;
+    font-size: 24px;
+    background-color: #FF851B;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: transform 0.1s;
+}
+
+button:active {
+    transform: scale(0.95);
+}
