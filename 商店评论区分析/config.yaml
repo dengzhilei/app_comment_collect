@@ -75,6 +75,10 @@ games:
   playstore_id: com.playrix.township
   platforms:
   - android
+- name: Bingo Voyage - Live Bingo Game
+  playstore_id: com.bingo.cruise.free.best.top.game
+  platforms:
+  - android
 scraper:
   time_range_days: 365
   max_reviews_per_game: 5000

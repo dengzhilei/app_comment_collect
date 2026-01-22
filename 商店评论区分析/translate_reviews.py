@@ -366,7 +366,9 @@ def translate_file(input_file, output_file):
 
 def main():
     """主函数"""
-    reports_dir = Path("output/reports")
+    # 使用脚本所在目录作为基准路径
+    script_dir = Path(__file__).parent
+    reports_dir = script_dir / "output/reports"
     
     # 获取所有txt文件（排除已翻译的文件）
     all_files = list(reports_dir.glob("*.txt"))
@@ -405,7 +407,7 @@ def main():
             return
     
     # 生成输出文件名（保存到reports_chs目录）
-    chs_reports_dir = Path("output/reports_chs")
+    chs_reports_dir = script_dir / "output/reports_chs"
     chs_reports_dir.mkdir(exist_ok=True)
     output_file = chs_reports_dir / f"{selected_file.stem}_中文.txt"
     
