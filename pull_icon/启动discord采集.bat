@@ -8,7 +8,7 @@ echo   警告：请务必确保已手动关闭所有现有的 Chrome 窗口！
 echo ======================================================
 
 :: 使用环境变量定位默认路径
-start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="%LOCALAPPDATA%\Google\Chrome\User Data"
+start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="D:\chrome_debug_profile"
 
 echo.
 echo [检查] 如果 Chrome 没开启新窗口，请在任务管理器杀掉所有 Chrome 进程再试。

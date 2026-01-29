@@ -3,7 +3,7 @@ import base64
 from playwright.sync_api import sync_playwright
 
 # 配置
-SAVE_DIR = "farm_avatars"
+SAVE_DIR = os.path.join(os.path.dirname(__file__), "farm_avatars")
 TARGET_SIZE = "512"  # 获取高清图的尺寸
 
 if not os.path.exists(SAVE_DIR):
@@ -15,9 +15,24 @@ def run():
         print("正在尝试连接到浏览器...")
         browser = p.chromium.connect_over_cdp("http://localhost:9222")
         context = browser.contexts[0]
-        page = context.pages[0]  # 获取当前活动的 Discord 标签页
         
-        print(f"成功连接！当前页面: {page.title()}")
+        # 自动查找 Discord 页面
+        page = None
+        print(f"检测到 {len(context.pages)} 个标签页:")
+        for i, p_page in enumerate(context.pages):
+            title = p_page.title()
+            url = p_page.url
+            print(f"  [{i}] {title} - {url[:50]}...")
+            if "discord" in url.lower() or "discord" in title.lower():
+                page = p_page
+                print(f"  >>> 选中此页面")
+        
+        if page is None:
+            print("\n⚠ 未找到 Discord 页面！请确保已打开 Discord 网页版。")
+            print("使用第一个标签页作为备选...")
+            page = context.pages[0]
+        
+        print(f"\n成功连接！当前监听页面: {page.title()}")
         print("提示：请在浏览器中手动滚动成员列表。脚本将自动捕获头像。")
 
         # 用于去重，防止重复下载同一张图
