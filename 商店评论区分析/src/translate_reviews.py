@@ -355,7 +355,7 @@ def translate_file(input_file, output_file):
     if os.name == 'nt':
         try:
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-        except:
+        except:  # noqa: E722
             pass
             
     try:
@@ -366,22 +366,26 @@ def translate_file(input_file, output_file):
 
 def main():
     """主函数"""
-    # 使用脚本所在目录作为基准路径
-    script_dir = Path(__file__).parent
-    reports_dir = script_dir / "output/reports"
+    # 项目根目录（src 的上一级）
+    project_root = Path(__file__).resolve().parent.parent
+    reports_dir = project_root / "output/reports"
+    chs_reports_dir = project_root / "output/reports_chs"
     
-    # 获取所有txt文件（排除已翻译的文件）
+    # 获取所有 txt，排除已在 reports_chs 中有对应 _中文.txt 的（即已翻译过的）
     all_files = list(reports_dir.glob("*.txt"))
-    txt_files = [f for f in all_files if "_中文" not in f.name]
+    txt_files = [
+        f for f in all_files
+        if "_中文" not in f.name and not (chs_reports_dir / f"{f.stem}_中文.txt").exists()
+    ]
     
     if not txt_files:
-        print("未找到需要翻译的文件")
+        print("未找到需要翻译的文件（或已全部翻译）")
         return
     
     print("="*60)
     print("游戏评论翻译工具（并发版）")
     print("="*60)
-    print(f"\n找到 {len(txt_files)} 个待翻译文件:\n")
+    print(f"\n找到 {len(txt_files)} 个待翻译文件（已翻译的已跳过）:\n")
     for i, f in enumerate(txt_files, 1):
         print(f"  {i}. {f.name}")
     
@@ -407,7 +411,6 @@ def main():
             return
     
     # 生成输出文件名（保存到reports_chs目录）
-    chs_reports_dir = script_dir / "output/reports_chs"
     chs_reports_dir.mkdir(exist_ok=True)
     output_file = chs_reports_dir / f"{selected_file.stem}_中文.txt"
     

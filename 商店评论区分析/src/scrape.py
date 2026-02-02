@@ -5,12 +5,12 @@
 """
 import logging
 import json
-import yaml
 import sys
 from pathlib import Path
 from datetime import datetime
 
 from src.scraper.playstore_scraper import PlayStoreScraper
+from src.config import load_config, get_game_by_name, get_scraper_config, get_config_path
 
 # 配置日志
 logging.basicConfig(
@@ -64,26 +64,18 @@ def main():
     logger.info("="*60)
     
     # 加载配置
-    config_path = "config.yaml"
-    if not Path(config_path).exists():
-        logger.error(f"配置文件 {config_path} 不存在！")
+    if not get_config_path().exists():
+        logger.error(f"配置文件 {get_config_path()} 不存在！")
         return
     
-    with open(config_path, 'r', encoding='utf-8') as f:
-        config = yaml.safe_load(f)
-    
-    # 查找游戏配置
-    game_config = None
-    for game in config['games']:
-        if game['name'] == game_name:
-            game_config = game
-            break
+    config = load_config()
+    game_config = get_game_by_name(game_name, config)
     
     if not game_config:
         logger.error(f"未找到游戏 '{game_name}' 的配置！")
         logger.info("请在 config.yaml 中配置该游戏")
         logger.info("可用游戏列表:")
-        for game in config['games']:
+        for game in config.get('games', []):
             logger.info(f"  - {game['name']}")
         return
     
@@ -102,13 +94,14 @@ def main():
     logger.info(f"时间范围: {start_date.strftime('%Y-%m-%d')} 至 {end_date.strftime('%Y-%m-%d')}")
     
     # 获取地区配置
-    region = config['scraper'].get('regions', [{'lang': 'en', 'country': 'us', 'name': '美国'}])[0]
+    scraper_config = get_scraper_config(config)
+    region = scraper_config.get('regions', [{'lang': 'en', 'country': 'us', 'name': '美国'}])[0]
     logger.info(f"地区: {region['name']} ({region['lang']}, {region['country']})\n")
     
     # 创建采集器
     scraper = PlayStoreScraper(
-        delay=config['scraper']['delay_between_requests'],
-        retry_times=config['scraper']['retry_times']
+        delay=scraper_config['delay_between_requests'],
+        retry_times=scraper_config['retry_times']
     )
     
     # 先验证应用信息
@@ -130,7 +123,7 @@ def main():
         app_id=app_id,
         app_name=game_name,
         days=365,  # 这个参数会被 start_date 和 end_date 覆盖
-        max_reviews=config['scraper']['max_reviews_per_game'],
+        max_reviews=scraper_config['max_reviews_per_game'],
         lang=region['lang'],
         country=region['country'],
         start_date=start_date,

@@ -11,6 +11,7 @@ from datetime import datetime
 
 from src.processor.data_cleaner import DataCleaner
 from src.analyzer.review_filter import ReviewFilter
+from src.config import load_config, get_games_list
 
 # 配置日志
 logging.basicConfig(
@@ -85,28 +86,24 @@ def main(game_name: str = None):
         data_file = max(json_files, key=lambda p: p.stat().st_mtime)
         logger.info(f"自动检测到最新数据文件: {data_file.name}")
         
-        # 从文件名提取游戏名称
+        # 从文件名提取游戏名称：先按 config 匹配，否则取文件名首段
         file_name = data_file.stem
-        if 'Animals' in file_name or 'animalkingdomraid' in file_name:
-            game_name = "Animals & Coins"
-        elif 'TopTycoon' in file_name or 'monopoly' in file_name.lower():
-            game_name = "TopTycoon"
-        elif 'Carnival' in file_name:
-            game_name = "Carnival Tycoon"
-        elif 'Fishing_Travel' in file_name or 'fishingtravel' in file_name.lower() or 'arkgame.ft' in file_name.lower():
-            game_name = "Fishing Travel"
-        elif 'Fishing_Master' in file_name or 'fishingmaster' in file_name.lower() or 'arkgame.fishingmaster' in file_name.lower():
-            game_name = "Fishing Master"
-        elif 'Fish_of_Fortune' in file_name or 'fishoffortune' in file_name.lower() or 'whalo.games.fishoffortune' in file_name.lower():
-            game_name = "Fish of Fortune"
-        elif 'Cash_Club' in file_name or 'cashclub' in file_name.lower() or 'cashparty' in file_name.lower() or 'unicornstudio.cashparty' in file_name.lower():
-            game_name = "Cash Club"
-        elif 'Sunday_City' in file_name or 'sundaycity' in file_name.lower() or 'adventure.party.real.life' in file_name.lower():
-            game_name = "Sunday City: Life RolePlay"
-        elif 'Fish' in file_name or 'Fortune' in file_name:
-            game_name = "Fish of Fortune"  # 默认匹配
-        else:
-            # 尝试从文件名提取（取第一部分作为游戏名）
+        file_lower = file_name.lower()
+        game_name = None
+        try:
+            config = load_config()
+            games = get_games_list(config)
+            # 按名称长度降序，优先匹配更长更具体的名称
+            for g in sorted(games, key=lambda x: len(x.get('name', '')), reverse=True):
+                name = g.get('name', '')
+                norm = name.replace(' ', '_').replace(':', '_').replace('&', '_')
+                pid = (g.get('playstore_id') or '').lower()
+                if (norm and (norm.lower() in file_lower or file_lower.startswith(norm.lower()))) or (pid and pid in file_lower):
+                    game_name = name
+                    break
+        except FileNotFoundError:
+            pass
+        if game_name is None:
             parts = file_name.split('_')
             game_name = parts[0].replace('_', ' ') if parts else "Unknown"
         

@@ -52,12 +52,5 @@ echo.
 
 :end
 echo.
-echo ========================================
-echo 全部完成
-echo ========================================
-echo.
-echo 查看结果:
-echo   精选评论: output\reports\ (TXT格式,可直接复制给AI)
-echo.
 pause
 

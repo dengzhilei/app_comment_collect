@@ -2,7 +2,6 @@
 交互式输入处理模块
 从 config.yaml 读取配置并生成动态菜单
 """
-import yaml
 import sys
 from pathlib import Path
 
@@ -10,22 +9,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.scraper.playstore_scraper import PlayStoreScraper
+from src.config import load_config, get_games_list, get_config_path, save_config
 
 
-def load_config():
-    """加载配置文件"""
-    config_path = Path("config.yaml")
-    if not config_path.exists():
-        print(f"错误: 配置文件 {config_path} 不存在！")
+def _load_config_or_exit():
+    """加载配置，不存在则打印错误并退出。"""
+    if not get_config_path().exists():
+        print(f"错误: 配置文件 {get_config_path()} 不存在！")
         sys.exit(1)
-    
-    with open(config_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
-
-
-def get_games_list(config):
-    """获取游戏列表"""
-    return config.get('games', [])
+    return load_config()
 
 
 def display_games_menu(games, extra_options=None, search_first=False):
@@ -104,48 +96,80 @@ def display_games_menu(games, extra_options=None, search_first=False):
     return None
 
 
+def _match_games_in_config(games, user_input):
+    """在配置中按名称匹配游戏（不区分大小写，支持包含关系）"""
+    if not user_input or not user_input.strip():
+        return []
+    q = user_input.strip().lower()
+    return [
+        g for g in games
+        if q in g['name'].lower() or g['name'].lower() in q or g['name'].lower() == q
+    ]
+
+
 def interactive_scrape_input():
-    """交互式采集输入（默认使用搜索）"""
-    config = load_config()
+    """交互式采集输入：先让用户输入名字，配置有匹配则询问是否直接用，否则走 Google 搜索"""
+    config = _load_config_or_exit()
     games = get_games_list(config)
     
     if not games:
         print("错误: 配置文件中没有游戏列表！")
         sys.exit(1)
     
-    # 默认直接使用搜索功能
     print("=" * 60)
     print("评论采集与筛选工具")
     print("=" * 60)
     print()
-    print("提示: 默认使用搜索功能，如需从配置文件选择游戏，请输入 'c'")
-    print()
     
-    # 询问用户选择模式
-    mode_choice = input("请选择模式 (直接按Enter使用搜索，或输入 'c' 从配置文件选择): ").strip().lower()
+    user_input = input("请输入游戏名称: ").strip()
+    if not user_input:
+        print("错误: 游戏名称不能为空")
+        sys.exit(1)
     
-    if mode_choice == 'c':
-        # 从配置文件选择游戏
-        extra_options = [
-            (1, "搜索游戏ID（通过游戏名查找）")
-        ]
-        game_name = display_games_menu(games, extra_options=extra_options, search_first=True)
-        
-        # 如果选择了搜索选项
-        if game_name == "搜索游戏ID（通过游戏名查找）":
-            game_name = search_and_select_game()
-            if not game_name:
-                print("错误: 未选择游戏或搜索失败")
-                sys.exit(1)
-        elif not game_name:
-            print("错误: 未选择游戏或选择无效")
-            sys.exit(1)
+    matches = _match_games_in_config(games, user_input)
+    
+    if len(matches) == 1:
+        # 配置里唯一匹配，询问是否直接使用
+        print()
+        print(f"在配置中找到: {matches[0]['name']}")
+        confirm = input("是否直接使用? (Y/n，默认Y): ").strip().lower()
+        if confirm != 'n':
+            game_name = matches[0]['name']
+        else:
+            print()
+            print("正在通过 Google Play 搜索...")
+            game_name = search_and_select_game(query=user_input)
+    elif len(matches) > 1:
+        # 多个匹配，列出让用户选
+        print()
+        print("在配置中找到多个匹配:")
+        for i, g in enumerate(matches, 1):
+            print(f"  {i}. {g['name']}")
+        choice = input(f"请选择 (1-{len(matches)})，或按 Enter/n 去 Google 搜索: ").strip()
+        if choice == '' or choice.lower() == 'n':
+            print()
+            print("正在通过 Google Play 搜索...")
+            game_name = search_and_select_game(query=user_input)
+        else:
+            try:
+                idx = int(choice)
+                if 1 <= idx <= len(matches):
+                    game_name = matches[idx - 1]['name']
+                else:
+                    print("无效选择，正在通过 Google Play 搜索...")
+                    game_name = search_and_select_game(query=user_input)
+            except ValueError:
+                print("无效输入，正在通过 Google Play 搜索...")
+                game_name = search_and_select_game(query=user_input)
     else:
-        # 默认直接使用搜索
-        game_name = search_and_select_game()
-        if not game_name:
-            print("错误: 未选择游戏或搜索失败")
-            sys.exit(1)
+        # 配置无匹配，自动走 Google 搜索
+        print()
+        print("配置中未找到，正在通过 Google Play 搜索...")
+        game_name = search_and_select_game(query=user_input)
+    
+    if not game_name:
+        print("错误: 未选择游戏或搜索失败")
+        sys.exit(1)
     
     print()
     print(f"已选择游戏: {game_name}")
@@ -176,15 +200,16 @@ def interactive_scrape_input():
         return game_name, None, None
 
 
-def search_and_select_game():
-    """搜索游戏并选择"""
+def search_and_select_game(query=None):
+    """搜索游戏并选择。若传入 query 则直接使用，不再提示输入。"""
     print()
     print("=" * 60)
-    print("搜索Google Play Store游戏")
+    print("搜索 Google Play Store 游戏")
     print("=" * 60)
     print()
     
-    query = input("请输入游戏名称进行搜索: ").strip()
+    if query is None:
+        query = input("请输入游戏名称进行搜索: ").strip()
     
     if not query:
         print("错误: 搜索关键词不能为空")
@@ -277,15 +302,11 @@ def search_and_select_game():
 def add_game_to_config(game_name: str, app_id: str):
     """将游戏添加到配置文件"""
     try:
-        config_path = Path("config.yaml")
-        if not config_path.exists():
-            print(f"警告: 配置文件 {config_path} 不存在，无法添加")
+        if not get_config_path().exists():
+            print(f"警告: 配置文件 {get_config_path()} 不存在，无法添加")
             return
         
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f)
-        
-        # 检查是否已存在
+        config = load_config()
         games = config.get('games', [])
         for game in games:
             if game.get('name') == game_name or game.get('playstore_id') == app_id:
@@ -300,11 +321,7 @@ def add_game_to_config(game_name: str, app_id: str):
         }
         games.append(new_game)
         config['games'] = games
-        
-        # 保存配置文件
-        with open(config_path, 'w', encoding='utf-8') as f:
-            yaml.dump(config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
-        
+        save_config(config)
         print(f"✓ 已成功将 '{game_name}' 添加到配置文件")
         
     except Exception as e:
@@ -313,7 +330,7 @@ def add_game_to_config(game_name: str, app_id: str):
 
 def interactive_filter_input():
     """交互式筛选输入"""
-    config = load_config()
+    config = _load_config_or_exit()
     games = get_games_list(config)
     
     if not games:
