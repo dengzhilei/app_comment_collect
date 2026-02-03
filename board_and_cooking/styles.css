@@ -1,0 +1,510 @@
+/* 竖版整体 */
+:root {
+  --tile-wheat: #f4e4a6;
+  --tile-milk: #e8f4fc;
+  --tile-egg: #fff5e6;
+  --tile-tomato: #ffe5e5;
+  --bg: #2d2a26;
+  --card: #3d3935;
+  --accent: #e8b86d;
+  --text: #f5f0e8;
+  --muted: #9a958c;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Noto Sans SC", "PingFang SC", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.vertical-app {
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部栏 */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--card);
+  border-bottom: 2px solid var(--accent);
+  flex-shrink: 0;
+}
+
+.dice-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.tab.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn-inventory {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.15);
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+/* 面板切换 */
+.panel {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  padding: 12px;
+  overflow: auto;
+}
+
+.panel.active {
+  display: flex;
+}
+
+/* ========== 模块1：棋盘 ========== */
+.board-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto 16px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card);
+}
+
+/* 方形中空：5x5 网格，中间格为空 */
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  width: 100%;
+  height: 100%;
+  gap: 2px;
+  padding: 4px;
+}
+
+.tile {
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  position: relative;
+  transition: transform 0.15s;
+}
+
+.tile-empty {
+  background: transparent;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tile.wheat { background: var(--tile-wheat); color: #8b6914; }
+.tile.milk  { background: var(--tile-milk);  color: #2a6fa8; }
+.tile.egg   { background: var(--tile-egg);   color: #b8860b; }
+.tile.tomato{ background: var(--tile-tomato); color: #c0392b; }
+
+.tile.current { box-shadow: 0 0 0 3px var(--accent); transform: scale(1.05); }
+
+.player-token {
+  position: absolute;
+  font-size: 1.5rem;
+  pointer-events: none;
+  transition: left 0.3s ease, top 0.3s ease;
+  z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.board-actions {
+  text-align: center;
+}
+
+.bet-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.bet-row span:first-of-type { font-size: 0.9rem; color: var(--muted); margin-right: 6px; }
+.bet-options { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn-bet-opt {
+  min-width: 36px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.15);
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.btn-bet-opt.active { background: var(--accent); color: var(--bg); font-weight: bold; }
+.btn-bet-opt:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-gm {
+  margin-top: 10px;
+  padding: 6px 12px;
+  border: 1px dashed var(--muted);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.btn-gm:hover { color: var(--accent); border-color: var(--accent); }
+
+.btn-roll {
+  padding: 14px 28px;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #e8b86d, #c99a4a);
+  color: var(--bg);
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-roll:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.roll-hint {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ========== 模块2：订单 ========== */
+.town-map {
+  flex: 1;
+  min-height: 200px;
+  background: linear-gradient(180deg, #5a9a6e 0%, #7ab88a 50%, #4a7a5a 100%);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.npc-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 3px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.npc-avatar:hover { transform: scale(1.05); }
+.npc-avatar.selected { border-color: var(--accent); }
+
+.order-detail {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 120px;
+}
+
+.order-detail .no-order { color: var(--muted); text-align: center; padding: 24px; }
+.order-content h3 { margin-top: 0; }
+.order-reward { margin: 8px 0; color: var(--accent); font-size: 0.95rem; }
+.order-content ul { list-style: none; padding: 0; }
+.order-content li { padding: 6px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.order-req-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.order-content li span.need { color: var(--muted); }
+.order-content li span.ok { color: #7ab88a; }
+.btn-craft-inline {
+  margin-left: 8px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-detail-inline {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+/* 配方详情弹窗 */
+.recipe-detail-title { margin-top: 0; }
+.recipe-detail-body { margin: 12px 0; }
+.recipe-detail-list { list-style: none; padding-left: 0; margin: 8px 0; }
+.recipe-detail-list li { padding: 4px 0; }
+
+/* 合成链路：Lv1 → Lv2 → Lv3，高亮目标 */
+.recipe-detail-chain-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 4px;
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 10px;
+}
+.chain-node {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.chain-node.chain-target {
+  background: rgba(232, 184, 109, 0.3);
+  color: var(--accent);
+  font-weight: bold;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.chain-arrow {
+  color: var(--muted);
+  font-size: 1rem;
+  user-select: none;
+}
+.btn-recipe-back {
+  display: block;
+  margin-bottom: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.15);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.btn-recipe-back.hidden { display: none; }
+
+.btn-submit {
+  margin-top: 12px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.hidden { display: none !important; }
+
+/* ========== 模块2：制作 ========== */
+.craft-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.craft-tab {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.craft-tab.active { background: var(--accent); color: var(--bg); }
+
+.craft-chain {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.craft-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.craft-level .label {
+  min-width: 80px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.craft-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  margin-right: 8px;
+  margin-bottom: 4px;
+}
+
+.craft-item .count { color: var(--accent); font-weight: bold; }
+
+.btn-craft {
+  padding: 4px 10px;
+  margin-left: 4px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-craft:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.cross-craft {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.cross-craft h4 { margin-top: 0; }
+.cross-recipe {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  padding: 8px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+}
+
+.cross-recipe .arrow { color: var(--muted); }
+
+/* ========== 背包弹窗 ========== */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modal-content {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 20px;
+  max-width: 360px;
+  width: 100%;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.modal-content h3 { margin-top: 0; }
+.modal-craft-content .craft-chain { margin-bottom: 12px; }
+.modal-craft-content .btn-close { margin-top: 12px; }
+.inventory-list {
+  margin: 16px 0;
+}
+
+.inv-chain-row {
+  margin-bottom: 14px;
+}
+.inv-chain-row:last-of-type { margin-bottom: 10px; }
+.inv-chain-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.inv-chain-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.inv-item-cross {
+  margin-top: 4px;
+}
+
+.inv-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+}
+
+.btn-close {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background: var(--card);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  z-index: 101;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

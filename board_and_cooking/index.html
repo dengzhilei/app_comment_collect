@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Board & Cooking - 竖版烹饪 Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app" class="vertical-app">
+    <!-- 顶部资源栏 -->
+    <header class="top-bar">
+      <div class="dice-count">
+        <span class="icon">🎲</span>
+        <span id="dice-num">20</span>
+      </div>
+      <nav class="tabs">
+        <button type="button" class="tab active" data-tab="board">走格子</button>
+        <button type="button" class="tab" data-tab="orders">订单</button>
+        <button type="button" class="tab" data-tab="craft">制作</button>
+      </nav>
+      <button type="button" class="btn-inventory" id="btn-inventory" title="背包">🎒</button>
+    </header>
+
+    <!-- 模块1：走格子 -->
+    <section id="panel-board" class="panel active">
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+        <div id="player-token" class="player-token">🧑</div>
+      </div>
+      <div class="board-actions">
+        <div class="bet-row">
+          <span>下注倍数</span>
+          <div class="bet-options">
+            <button type="button" id="bet-opt-1" class="btn-bet-opt active">×1</button>
+            <button type="button" id="bet-opt-2" class="btn-bet-opt">×2</button>
+            <button type="button" id="bet-opt-3" class="btn-bet-opt">×3</button>
+            <button type="button" id="bet-opt-5" class="btn-bet-opt">×5</button>
+            <button type="button" id="bet-opt-10" class="btn-bet-opt">×10</button>
+          </div>
+        </div>
+        <button type="button" id="btn-roll" class="btn-roll">掷骰子 🎲</button>
+        <p class="roll-hint" id="roll-hint">消耗 1 个骰子，掷出 1–6 步</p>
+        <button type="button" id="btn-gm-dice" class="btn-gm" title="GM 加骰子">GM +20 骰子</button>
+      </div>
+    </section>
+
+    <!-- 模块2：订单 -->
+    <section id="panel-orders" class="panel">
+      <div class="town-map" id="town-map"></div>
+      <div class="order-detail" id="order-detail">
+        <p class="no-order">点击地图上的 NPC 查看订单</p>
+        <div class="order-content hidden" id="order-content">
+          <h3 id="order-npc-name"></h3>
+          <p id="order-reward" class="order-reward hidden"></p>
+          <ul id="order-requirements"></ul>
+          <button type="button" id="btn-submit-order" class="btn-submit">提交订单</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 模块2：制作 -->
+    <section id="panel-craft" class="panel">
+      <div class="craft-tabs">
+        <button type="button" class="craft-tab active" data-chain="wheat">主食</button>
+        <button type="button" class="craft-tab" data-chain="dairy">乳制品</button>
+        <button type="button" class="craft-tab" data-chain="veggie">蔬菜</button>
+        <button type="button" class="craft-tab" data-chain="protein">蛋白质</button>
+      </div>
+      <div id="craft-chain" class="craft-chain"></div>
+      <div class="cross-craft" id="cross-craft">
+        <h4>交叉合成</h4>
+        <div id="cross-recipes"></div>
+      </div>
+    </section>
+
+    <!-- 配方详情弹窗（v3：仅说明如何合成） -->
+    <div id="modal-recipe-detail" class="modal hidden">
+      <div class="modal-content">
+        <h3 class="recipe-detail-title"></h3>
+        <div class="recipe-detail-body"></div>
+        <button type="button" class="btn-recipe-back hidden">返回</button>
+        <button type="button" class="btn-close" id="btn-close-recipe-detail">关闭</button>
+      </div>
+    </div>
+
+    <!-- 背包弹窗 -->
+    <div id="modal-inventory" class="modal hidden">
+      <div class="modal-content">
+        <h3>背包</h3>
+        <div id="inventory-list" class="inventory-list"></div>
+        <button type="button" class="btn-close" id="btn-close-inventory">关闭</button>
+      </div>
+    </div>
+
+    <!-- 掷骰结果提示 -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+  <script src="config.js"></script>
+  <script src="game.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
