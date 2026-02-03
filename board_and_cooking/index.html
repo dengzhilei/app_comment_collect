@@ -24,24 +24,27 @@
 
     <!-- 模块1：走格子 -->
     <section id="panel-board" class="panel active">
+      <div id="board-gain" class="board-gain" aria-label="本次获得">
+        <span class="board-gain-placeholder">—</span>
+      </div>
       <div class="board-wrap">
         <div id="board" class="board"></div>
-        <div id="player-token" class="player-token">🧑</div>
+        <div id="player-token" class="player-token">🐻</div>
+        <!-- 掷骰子结果：独立显示在棋盘中央偏上 -->
+        <div id="board-dice-result" class="board-dice-result hidden" aria-label="骰子点数">
+          <span class="board-dice-label">点数</span>
+          <span id="board-dice-value" class="board-dice-value">0</span>
+        </div>
       </div>
       <div class="board-actions">
         <div class="bet-row">
-          <span>下注倍数</span>
-          <div class="bet-options">
-            <button type="button" id="bet-opt-1" class="btn-bet-opt active">×1</button>
-            <button type="button" id="bet-opt-2" class="btn-bet-opt">×2</button>
-            <button type="button" id="bet-opt-3" class="btn-bet-opt">×3</button>
-            <button type="button" id="bet-opt-5" class="btn-bet-opt">×5</button>
-            <button type="button" id="bet-opt-10" class="btn-bet-opt">×10</button>
-          </div>
+          <span>倍率</span>
+          <button type="button" id="bet-cycle-btn" class="btn-bet-cycle" title="点击切换">×1</button>
         </div>
         <button type="button" id="btn-roll" class="btn-roll">掷骰子 🎲</button>
-        <p class="roll-hint" id="roll-hint">消耗 1 个骰子，掷出 1–6 步</p>
-        <button type="button" id="btn-gm-dice" class="btn-gm" title="GM 加骰子">GM +20 骰子</button>
+      </div>
+      <div class="board-actions-gm">
+        <button type="button" id="btn-gm-dice" class="gm-link" title="GM 加骰子">GM +20 骰子</button>
       </div>
     </section>
 
@@ -97,7 +100,13 @@
     <div id="toast" class="toast hidden"></div>
   </div>
   <script src="config.js"></script>
-  <script src="game.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/items.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/modals.js"></script>
+  <script src="js/orders.js"></script>
+  <script src="js/craft.js"></script>
+  <script src="js/game.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

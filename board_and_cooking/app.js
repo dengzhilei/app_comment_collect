@@ -15,10 +15,8 @@
     document.getElementById('btn-close-recipe-detail').addEventListener('click', closeRecipeDetail);
     document.getElementById('btn-gm-dice').addEventListener('click', gmAddDice);
 
-    BET_OPTIONS.forEach(v => {
-      const btn = document.getElementById('bet-opt-' + v);
-      if (btn) btn.addEventListener('click', () => setBet(v));
-    });
+    const betCycleBtn = document.getElementById('bet-cycle-btn');
+    if (betCycleBtn) betCycleBtn.addEventListener('click', cycleBet);
 
     document.querySelectorAll('.craft-tab[data-chain]').forEach(t => {
       t.addEventListener('click', () => renderCraftChain(t.dataset.chain));
