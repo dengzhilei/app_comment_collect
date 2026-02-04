@@ -3,14 +3,16 @@
  * 棋盘产出、掉落表、基础物品均由「地格→合成链」+ 链数据 推导，避免重复书写 id。
  */
 
-// ---------- 棋盘外观（地格类型与展示） ----------
-const TILE_TYPES = ['wheat', 'milk', 'egg', 'tomato'];
-const TILE_EMOJI = { wheat: '🌾', milk: '🥛', egg: '🥚', tomato: '🍅' };
+// ---------- 棋盘外观（地格类型与展示，与合成链 CHAINS 的 key 统一） ----------
+const TILE_TYPES = ['wheat', 'dairy', 'veggie', 'protein'];
+/** 四种基础地格在「可分配格」中的数量（对象形式，键为地格类型 = 链名）。总和须等于可分配格数。未配置或总和不对时按原逻辑均分。 */
+const TILE_COUNTS = { wheat: 11, dairy: 7, veggie: 6, protein: 5};
+const TILE_EMOJI = { wheat: '🌾', dairy: '🥛', veggie: '🥬', protein: '🥚' };
 const TILE_IMAGE = {
   wheat: 'img/tiles/wheat.png',
-  milk: 'img/tiles/milk.png',
-  egg: 'img/tiles/egg.png',
-  tomato: 'img/tiles/tomato.png'
+  dairy: 'img/tiles/milk.png',
+  veggie: 'img/tiles/tomato.png',
+  protein: 'img/tiles/egg.png'
 };
 
 // ---------- 合成链（权威数据源：每条链 Lv1→Lv2→…→LvN） ----------
@@ -39,13 +41,7 @@ const CHAINS = {
   ]
 };
 
-// 地格类型 → 合成链 key（棋盘上该格对应哪条链）
-const TILE_TO_CHAIN = {
-  wheat: 'wheat',
-  milk: 'dairy',
-  egg: 'protein',
-  tomato: 'veggie'
-};
+// 地格类型即合成链 key，无需单独映射
 
 // 按链等级数使用的掉落权重（权重和 100，等级从低到高）
 const DROP_WEIGHTS_BY_LEVELS = {
@@ -58,9 +54,7 @@ const TILE_GAIN = (function() {
   var o = {};
   for (var i = 0; i < TILE_TYPES.length; i++) {
     var t = TILE_TYPES[i];
-    var chainKey = TILE_TO_CHAIN[t];
-    if (chainKey && CHAINS[chainKey] && CHAINS[chainKey][0])
-      o[t] = CHAINS[chainKey][0].id;
+    if (CHAINS[t] && CHAINS[t][0]) o[t] = CHAINS[t][0].id;
   }
   return o;
 })();
@@ -70,7 +64,7 @@ const TILE_DROP_TABLES = (function() {
   var o = {};
   for (var i = 0; i < TILE_TYPES.length; i++) {
     var t = TILE_TYPES[i];
-    var chain = CHAINS[TILE_TO_CHAIN[t]];
+    var chain = CHAINS[t];
     if (!chain) continue;
     var weights = DROP_WEIGHTS_BY_LEVELS[chain.length] || DROP_WEIGHTS_BY_LEVELS[3];
     o[t] = chain.map(function(item, idx) {
@@ -89,15 +83,32 @@ const BASE_ITEM_IDS = (function() {
   return ids;
 })();
 
-// ---------- 棋盘结构 ----------
-const BOARD_CELLS = 24;
-const HOLLOW_GRID_SIZE = 7;
+// ---------- 棋盘结构（doc_3 v1：仅外圈 40 格，方形中空无内圈） ----------
+const BOARD_CELLS = 40;
+const HOLLOW_GRID_SIZE = 11;
+// 路径：仅外圈 40 格（11×11 周长 = 11+10+10+9）
 const PATH_GRID = [
-  [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
-  [1,6],[2,6],[3,6],[4,6],[5,6],
-  [6,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],
-  [5,0],[4,0],[3,0],[2,0],[1,0]
+  [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,9],[0,10],
+  [1,10],[2,10],[3,10],[4,10],[5,10],[6,10],[7,10],[8,10],[9,10],[10,10],
+  [10,9],[10,8],[10,7],[10,6],[10,5],[10,4],[10,3],[10,2],[10,1],[10,0],
+  [9,0],[8,0],[7,0],[6,0],[5,0],[4,0],[3,0],[2,0],[1,0]
 ];
+// 视口可见格数（宽/高），用于镜头裁剪与移动
+const BOARD_VIEWPORT_CELLS = 8;
+// 每次掷骰使用的骰子数量，步数 = 两骰点数之和
+const DICE_PER_ROLL = 2;
+
+// ---------- doc_3 v2：特殊格（飞机场 / 四角空地 / 问号格） ----------
+// 四边中央格为飞机场（路径下标：上5 右15 下25 左35）
+const BOARD_AIRPORT_PATH_INDICES = [5, 15, 25, 35];
+// 四角为占位空地（路径下标：左上0 右上10 右下20 左下30）
+const BOARD_CORNER_PATH_INDICES = [0, 10, 20, 30];
+// 左下角显示为 GO 起点格
+const BOARD_GO_PATH_INDEX = 30;
+// 问号格：直接配置路径下标（0–39），未配置时则按数量随机抽取
+const BOARD_QUESTION_PATH_INDICES = [12, 26, 37];
+// 未配置 BOARD_QUESTION_PATH_INDICES 时，从非飞机场、非角格中随机抽取的数量
+const BOARD_QUESTION_MARK_COUNT = 3;
 
 // ---------- 链内合成配方（Lv2+ 由下级合成） ----------
 const CHAIN_RECIPES = {

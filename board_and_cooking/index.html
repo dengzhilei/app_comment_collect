@@ -37,9 +37,11 @@
         <span class="board-gain-placeholder">—</span>
       </div>
       <div class="board-wrap">
-        <div id="board" class="board"></div>
-        <div id="player-token" class="player-token">🐻</div>
-        <!-- 掷骰子结果：独立显示在棋盘中央偏上 -->
+        <div class="board-inner" id="board-inner">
+          <div id="board" class="board"></div>
+          <div id="player-token" class="player-token">🐻</div>
+        </div>
+        <!-- 掷骰子结果：独立显示在棋盘中央偏上（在视口内） -->
         <div id="board-dice-result" class="board-dice-result hidden" aria-label="骰子点数">
           <span class="board-dice-label">点数</span>
           <span id="board-dice-value" class="board-dice-value">0</span>
@@ -54,6 +56,11 @@
       </div>
       <div class="board-actions-gm">
         <button type="button" id="btn-gm-dice" class="gm-link" title="GM 加骰子">GM +20 骰子</button>
+        <label class="gm-row">
+          <span>下次点数</span>
+          <input type="number" id="gm-next-roll" min="2" max="12" value="7" class="gm-input" title="2–12" />
+          <button type="button" id="btn-gm-set-roll" class="gm-link">指定</button>
+        </label>
       </div>
     </section>
 

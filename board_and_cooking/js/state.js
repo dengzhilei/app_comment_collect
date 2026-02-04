@@ -19,7 +19,10 @@
     craftFilterCategory: 'all',
     craftOnlyMakeable: false,
     activeOrders: [],
-    selectedOrderSlot: null
+    selectedOrderSlot: null,
+    boardQuestionIndices: null,
+    lastRollDice: null,
+    gmNextRollSteps: null
   };
 
   function getInv(id) {

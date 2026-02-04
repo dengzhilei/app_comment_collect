@@ -1,9 +1,9 @@
 /* 竖版整体 */
 :root {
   --tile-wheat: #f4e4a6;
-  --tile-milk: #e8f4fc;
-  --tile-egg: #fff5e6;
-  --tile-tomato: #ffe5e5;
+  --tile-dairy: #e8f4fc;
+  --tile-veggie: #ffe5e5;
+  --tile-protein: #fff5e6;
   --bg: #2d2a26;
   --card: #3d3935;
   --accent: #e8b86d;
@@ -111,7 +111,7 @@ body {
   display: flex;
 }
 
-/* ========== 模块1：棋盘（v6 地图加大） ========== */
+/* ========== 模块1：棋盘（doc_3 v1：10x10 视口裁剪 + 镜头） ========== */
 .board-wrap {
   position: relative;
   width: 100%;
@@ -123,13 +123,18 @@ body {
   background: var(--card);
 }
 
-/* 方形中空：v8 改为 7x7 网格 */
+/* 内层：整张棋盘 + 棋子，通过 transform 做镜头移动 */
+.board-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: transform 0.35s ease-out;
+  will-change: transform;
+}
+
+/* 10x10 网格，尺寸由 JS 根据 BOARD_VIEWPORT_CELLS 计算 */
 .board {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(7, 1fr);
-  width: 100%;
-  height: 100%;
   gap: 2px;
   padding: 4px;
 }
@@ -165,12 +170,19 @@ body {
 }
 .tile .tile-img:not(.tile-img-fail) ~ .tile-fallback { display: none; }
 
-.tile.wheat { background: var(--tile-wheat); color: #8b6914; }
-.tile.milk  { background: var(--tile-milk);  color: #2a6fa8; }
-.tile.egg   { background: var(--tile-egg);   color: #b8860b; }
-.tile.tomato{ background: var(--tile-tomato); color: #c0392b; }
+.tile.wheat   { background: var(--tile-wheat);   color: #8b6914; }
+.tile.dairy   { background: var(--tile-dairy);   color: #2a6fa8; }
+.tile.veggie  { background: var(--tile-veggie);  color: #c0392b; }
+.tile.protein { background: var(--tile-protein);  color: #b8860b; }
 
 .tile.current { box-shadow: 0 0 0 3px var(--accent); transform: scale(1.05); }
+
+/* doc_3 v2：特殊格 */
+.tile-airport { background: linear-gradient(135deg, #5a7a9a 0%, #3d5a78 100%); color: #fff; }
+.tile-corner { background: rgba(255,255,255,0.12); color: var(--muted); }
+.tile-corner .tile-fallback { font-size: 0.85rem; font-weight: bold; letter-spacing: 0.05em; }
+.tile-question { background: linear-gradient(135deg, #6b5b95 0%, #4a3f6a 100%); color: #fff; }
+.tile-question .tile-fallback { font-size: 1.4rem; font-weight: bold; }
 
 /* 掷骰子结果：棋盘中央偏上独立显示 */
 .board-dice-result {
@@ -206,10 +218,17 @@ body {
 
 .player-token {
   position: absolute;
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
+  margin-top: -20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.5rem;
   pointer-events: none;
-  transition: left 0.22s ease-out, top 0.22s ease-out;
   z-index: 2;
+  transition: left 0.22s ease-out, top 0.22s ease-out;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
 }
 .player-token-land {
@@ -293,6 +312,14 @@ body {
   background: rgba(255, 200, 80, 0.4);
   color: #ffd966;
 }
+.gain-tag-harvest {
+  background: rgba(100, 200, 120, 0.35);
+  color: #7ed89a;
+}
+.board-gain-harvest-list {
+  display: inline;
+  word-break: break-word;
+}
 .board-gain.gain-lucky {
   border-color: rgba(100, 180, 255, 0.6);
   box-shadow: 0 0 12px rgba(100, 180, 255, 0.2);
@@ -337,6 +364,9 @@ body {
 }
 .gm-link:hover { color: var(--accent); }
 .gm-link:active { opacity: 0.85; }
+.gm-row { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; }
+.gm-row span { font-size: 0.9rem; color: var(--muted); }
+.gm-input { width: 44px; padding: 4px 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg); color: var(--text); text-align: center; font-size: 0.95rem; }
 
 .btn-roll {
   padding: 14px 28px;

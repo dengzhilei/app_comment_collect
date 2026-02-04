@@ -12,7 +12,10 @@
     if (tab) tab.classList.add('active');
 
     if (tabId === 'board') {
-      setTimeout(updatePlayerToken, 50);
+      setTimeout(function() {
+        if (typeof updatePlayerToken === 'function') updatePlayerToken();
+        if (typeof updateBoardCamera === 'function') updateBoardCamera();
+      }, 50);
       updateBetUI();
       updateBoardGainUI();
       updateDiceResultUI();
