@@ -20,8 +20,11 @@
       updateBoardGainUI();
       updateDiceResultUI();
     }
-    if (tabId === 'orders') renderTownMap();
-    if (tabId === 'craft') renderCraftChain(state.currentChain);
+    if (tabId === 'orders') {
+      if (typeof renderTownMap === 'function') renderTownMap();
+      if (typeof renderMakingDesk === 'function') renderMakingDesk();
+    }
+    if (tabId === 'gm') { /* GM 面板无需额外渲染 */ }
   }
 
   function initGame() {

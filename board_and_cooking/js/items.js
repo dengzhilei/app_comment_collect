@@ -144,6 +144,17 @@
     return true;
   }
 
+  /** 所有物品 id 列表（链内 + 交叉配方），供 GM 等使用 */
+  function getAllItemIds() {
+    var ids = [];
+    for (var key in CHAINS) {
+      var chain = CHAINS[key];
+      if (chain) chain.forEach(function(item) { ids.push(item.id); });
+    }
+    (CROSS_RECIPES || []).forEach(function(r) { if (r.id) ids.push(r.id); });
+    return ids;
+  }
+
   global.getItemInfo = getItemInfo;
   global.getItemName = getItemName;
   global.getChainForItem = getChainForItem;
@@ -157,4 +168,5 @@
   global.isItemKnownToPlayer = isItemKnownToPlayer;
   global.getItemValue = getItemValue;
   global.getUnlockChefLevelForItem = getUnlockChefLevelForItem;
+  global.getAllItemIds = getAllItemIds;
 })(typeof window !== 'undefined' ? window : this);

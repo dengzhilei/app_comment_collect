@@ -340,33 +340,60 @@ body {
   100% { transform: scale(1); }
 }
 
-.board-actions-gm {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  text-align: center;
+/* ========== GM 页签 ========== */
+.panel-gm {
+  padding: 12px 16px;
 }
-.gm-link {
-  display: inline-block;
-  padding: 12px 20px;
-  margin: -8px -12px;
-  border: none;
-  background: none;
+.panel-gm .gm-section {
+  margin-bottom: 20px;
+}
+.panel-gm .gm-section-title {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  font-weight: bold;
   color: var(--muted);
-  font-size: 0.8rem;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
 }
-.gm-link:hover { color: var(--accent); }
-.gm-link:active { opacity: 0.85; }
-.gm-row { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; }
-.gm-row span { font-size: 0.9rem; color: var(--muted); }
-.gm-input { width: 44px; padding: 4px 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg); color: var(--text); text-align: center; font-size: 0.95rem; }
+.panel-gm .gm-row-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.panel-gm .gm-row { display: inline-flex; align-items: center; gap: 6px; }
+.panel-gm .gm-row span { font-size: 0.9rem; color: var(--muted); }
+.panel-gm .gm-input {
+  width: 48px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: var(--bg);
+  color: var(--text);
+  text-align: center;
+  font-size: 0.95rem;
+}
+.panel-gm .gm-input-num { width: 64px; }
+.panel-gm .gm-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.12);
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.panel-gm .gm-btn:hover { background: rgba(232,184,109,0.25); color: var(--accent); }
+.panel-gm .gm-select {
+  flex: 1;
+  min-width: 120px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.panel-gm .gm-add-item-row { margin-top: 8px; }
 
 .btn-roll {
   padding: 14px 28px;
@@ -390,69 +417,118 @@ body {
   color: var(--muted);
 }
 
-/* ========== 模块2：订单 ========== */
-.town-map {
+/* ========== 模块2：订单与制作（合并） ========== */
+.panel-orders-craft.panel.active {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.panel-orders-craft .order-section { flex-shrink: 0; margin-bottom: 12px; }
+.panel-orders-craft .craft-desk-section {
   flex: 1;
-  min-height: 200px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px;
+  border-top: 2px solid rgba(255,255,255,0.08);
+  overflow-y: auto;
+}
+
+.town-map {
+  min-height: 80px;
   background: linear-gradient(180deg, #5a9a6e 0%, #7ab88a 50%, #4a7a5a 100%);
   border-radius: 12px;
-  padding: 16px;
+  padding: 10px 12px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
-
-.npc-avatar {
-  width: 64px;
-  height: 64px;
+.town-map-narrow .npc-slot-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.town-map-narrow .npc-slot-wrap:hover { background: rgba(255,255,255,0.22); }
+.town-map-narrow .npc-slot-wrap.selected { border-color: var(--accent); background: rgba(232,184,109,0.2); }
+.town-map-narrow .npc-avatar {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: var(--card);
-  border: 3px solid transparent;
+  border: 2px solid transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  cursor: pointer;
-  transition: border-color 0.2s, transform 0.2s;
+  font-size: 1.35rem;
+  position: relative;
 }
-
-.npc-avatar:hover { transform: scale(1.05); }
-.npc-avatar.selected { border-color: var(--accent); }
-.npc-avatar.deliverable { position: relative; border-color: #5a9c6a; box-shadow: 0 0 12px rgba(90, 156, 106, 0.5); }
+.town-map-narrow .npc-avatar.deliverable { border-color: #5a9c6a; box-shadow: 0 0 8px rgba(90, 156, 106, 0.4); }
+.town-map-narrow .npc-slot-name { font-size: 0.65rem; color: var(--text); max-width: 48px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
 .npc-avatar-badge {
   position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 22px;
-  height: 22px;
+  bottom: -1px;
+  right: -1px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #5a9c6a;
   color: #fff;
-  font-size: 14px;
+  font-size: 10px;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--card);
+  border: 1px solid var(--card);
   pointer-events: none;
 }
 
 .order-detail {
   background: var(--card);
   border-radius: 12px;
-  padding: 16px;
-  min-height: 120px;
+  padding: 14px;
+  min-height: 80px;
 }
-
-.order-detail .no-order { color: var(--muted); text-align: center; padding: 24px; }
-.order-content h3 { margin-top: 0; }
+.order-detail .no-order { color: var(--muted); text-align: center; padding: 20px; }
+.order-main-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.order-main-row .order-demand-line { margin: 0; font-size: 0.9rem; line-height: 1.5; }
+.order-reward-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.order-reward-row .order-reward { margin: 0; color: var(--accent); font-size: 0.95rem; }
+.order-reward-row .btn-submit { margin-top: 0; margin-left: auto; }
+.order-demand-line .order-req-inline { margin-right: 4px; }
+.order-demand-line .order-req-inline.done { color: #7ab88a; }
 .order-reward { margin: 8px 0; color: var(--accent); font-size: 0.95rem; }
-.order-content ul { list-style: none; padding: 0; }
-.order-content li { padding: 6px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.order-req-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.order-content .btn-detail-inline {
+  margin-left: 2px;
+  padding: 1px 6px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.7rem;
+  cursor: pointer;
+  vertical-align: middle;
+}
 .order-content li span.need { color: var(--muted); }
 .order-content li span.ok { color: #7ab88a; }
 .btn-craft-inline {
@@ -538,9 +614,74 @@ body {
 
 .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* 制作台（订单与制作合并页下方） */
+.craft-desk-title { margin: 0 0 10px 0; font-size: 0.95rem; font-weight: bold; color: var(--muted); }
+.craft-desk { display: flex; flex-direction: column; gap: 10px; }
+.craft-desk-section-row { display: flex; flex-direction: column; gap: 4px; }
+.craft-desk-label { font-size: 0.85rem; color: var(--muted); }
+.craft-desk-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.craft-desk-arrow {
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 1px;
+  user-select: none;
+}
+.craft-desk-cell {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+  padding: 6px 8px;
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.2);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.craft-desk-cell:hover { border-color: var(--accent); background: rgba(232,184,109,0.12); }
+.craft-desk-cell .cell-lv {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: 0.6rem;
+  font-weight: bold;
+  color: var(--muted);
+  line-height: 1;
+}
+.craft-desk-cell .cell-icon { font-size: 1.4rem; line-height: 1.2; }
+.craft-desk-cell .cell-name { font-size: 0.75rem; margin-top: 2px; }
+.craft-desk-cell .cell-count { font-size: 0.75rem; color: var(--muted); }
+
+/* 链内合成弹窗（完整链） */
+.modal-chain-craft-content .chain-craft-title { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; }
+.modal-chain-craft-content .chain-craft-steps { display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
+.modal-chain-craft-content .chain-step {
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.modal-chain-craft-content .chain-step-title { font-weight: bold; margin-bottom: 6px; font-size: 0.95rem; }
+.modal-chain-craft-content .chain-step-title .chain-step-count { font-weight: normal; color: var(--muted); font-size: 0.85rem; }
+.modal-chain-craft-content .chain-step-formula { color: var(--muted); font-size: 0.9rem; margin-bottom: 8px; }
+.modal-chain-craft-content .chain-step-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.modal-chain-craft-content .btn-craft {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: bold;
+  cursor: pointer;
+}
+.modal-chain-craft-content .btn-craft:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .hidden { display: none !important; }
 
-/* ========== 模块2：制作 ========== */
+/* ========== 模块2：制作（原 Tab 已合并，保留样式供链弹窗等） ========== */
 .craft-tabs {
   display: flex;
   gap: 4px;
@@ -695,9 +836,10 @@ body {
 /* 烹饪详情弹窗 */
 .modal-craft-detail-content .craft-detail-title { margin-top: 0; display: flex; align-items: center; gap: 8px; }
 .craft-detail-formula { margin: 12px 0; }
-.craft-detail-formula .formula-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+.craft-detail-formula .formula-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; flex-wrap: wrap; gap: 6px; }
 .craft-detail-formula .formula-row.missing { color: #e07; }
 .craft-detail-formula .formula-row .formula-ok { color: #7ab88a; }
+.craft-detail-formula .craft-detail-detail-btn { margin-left: 8px; }
 .craft-detail-buttons { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
 .craft-detail-buttons .btn-craft-make { width: 100%; }
 .btn-craft-make { width: 100%; padding: 12px; margin-bottom: 0; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }

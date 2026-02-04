@@ -25,8 +25,8 @@
       </div>
       <nav class="tabs">
         <button type="button" class="tab active" data-tab="board">走格子</button>
-        <button type="button" class="tab" data-tab="orders">订单</button>
-        <button type="button" class="tab" data-tab="craft">制作</button>
+        <button type="button" class="tab" data-tab="orders">订单与制作</button>
+        <button type="button" class="tab" data-tab="gm">GM</button>
       </nav>
       <button type="button" class="btn-inventory" id="btn-inventory" title="背包">🎒</button>
     </header>
@@ -54,51 +54,61 @@
         </div>
         <button type="button" id="btn-roll" class="btn-roll">掷骰子 🎲</button>
       </div>
-      <div class="board-actions-gm">
-        <button type="button" id="btn-gm-dice" class="gm-link" title="GM 加骰子">GM +20 骰子</button>
-        <label class="gm-row">
-          <span>下次点数</span>
-          <input type="number" id="gm-next-roll" min="2" max="12" value="7" class="gm-input" title="2–12" />
-          <button type="button" id="btn-gm-set-roll" class="gm-link">指定</button>
-        </label>
-      </div>
     </section>
 
-    <!-- 模块2：订单 -->
-    <section id="panel-orders" class="panel">
-      <div class="town-map" id="town-map"></div>
-      <div class="order-detail" id="order-detail">
-        <p class="no-order">点击地图上的 NPC 查看订单</p>
-        <div class="order-content hidden" id="order-content">
-          <h3 id="order-npc-name"></h3>
-          <p id="order-reward" class="order-reward hidden"></p>
-          <ul id="order-requirements"></ul>
-          <button type="button" id="btn-submit-order" class="btn-submit">提交订单</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 模块3：制作（上下结构：A 原料区 + B 烹饪合成区） -->
-    <section id="panel-craft" class="panel panel-craft">
-      <div class="craft-section-a">
-        <div class="craft-tabs">
-          <button type="button" class="craft-tab active" data-chain="wheat">主食</button>
-          <button type="button" class="craft-tab" data-chain="dairy">乳制品</button>
-          <button type="button" class="craft-tab" data-chain="veggie">蔬菜</button>
-          <button type="button" class="craft-tab" data-chain="protein">蛋白质</button>
-        </div>
-        <div id="craft-chain" class="craft-chain"></div>
-      </div>
-      <div class="craft-section-b">
-        <div class="craft-filter-bar">
-          <div class="craft-filter-tabs">
-            <button type="button" class="craft-filter-tab active" data-category="all">全部</button>
-            <button type="button" class="craft-filter-tab" data-category="breakfast">早餐</button>
-            <button type="button" class="craft-filter-tab" data-category="main">主菜</button>
-            <button type="button" class="craft-filter-tab" data-category="dessert">甜点</button>
+    <!-- 模块2：订单与制作（合并） -->
+    <section id="panel-orders" class="panel panel-orders-craft">
+      <div class="order-section">
+        <div class="town-map town-map-narrow" id="town-map"></div>
+        <div class="order-detail" id="order-detail">
+          <p class="no-order">点击 NPC 查看订单</p>
+          <div class="order-content hidden" id="order-content">
+            <div class="order-main-row">
+              <p class="order-demand-line" id="order-demand-line"></p>
+              <div class="order-reward-row">
+                <p id="order-reward" class="order-reward"></p>
+                <button type="button" id="btn-submit-order" class="btn-submit">提交</button>
+              </div>
+            </div>
           </div>
         </div>
-        <div id="craft-grid" class="craft-grid" aria-label="菜品列表"></div>
+      </div>
+      <div class="craft-desk-section">
+        <h4 class="craft-desk-title">制作台</h4>
+        <div id="craft-desk" class="craft-desk"></div>
+      </div>
+    </section>
+
+    <!-- 模块3：GM -->
+    <section id="panel-gm" class="panel panel-gm">
+      <div class="gm-section">
+        <h4 class="gm-section-title">骰子</h4>
+        <div class="gm-row-wrap">
+          <button type="button" id="btn-gm-dice" class="gm-btn">+20 骰子</button>
+          <label class="gm-row">
+            <span>下次点数</span>
+            <input type="number" id="gm-next-roll" min="2" max="12" value="7" class="gm-input" />
+            <button type="button" id="btn-gm-set-roll" class="gm-btn">指定</button>
+          </label>
+        </div>
+      </div>
+      <div class="gm-section">
+        <h4 class="gm-section-title">经验</h4>
+        <div class="gm-row-wrap">
+          <input type="number" id="gm-exp" min="0" value="50" class="gm-input gm-input-num" />
+          <button type="button" id="btn-gm-add-exp" class="gm-btn">加经验</button>
+        </div>
+      </div>
+      <div class="gm-section">
+        <h4 class="gm-section-title">食材</h4>
+        <div class="gm-row-wrap">
+          <button type="button" id="btn-gm-add-base" class="gm-btn">每种基础食材 +5</button>
+        </div>
+        <div class="gm-row-wrap gm-add-item-row">
+          <select id="gm-item-select" class="gm-select"></select>
+          <input type="number" id="gm-item-qty" min="1" value="1" class="gm-input gm-input-num" />
+          <button type="button" id="btn-gm-add-item" class="gm-btn">添加</button>
+        </div>
       </div>
     </section>
 
@@ -131,7 +141,16 @@
       </div>
     </div>
 
-    <!-- 烹饪详情弹窗（点击网格格子：配方 + 制作/材料不足） -->
+    <!-- 链内合成弹窗（完整链：该链所有可合成等级） -->
+    <div id="modal-chain-craft" class="modal hidden">
+      <div class="modal-content modal-chain-craft-content">
+        <h3 class="chain-craft-title" id="chain-craft-title"></h3>
+        <div class="chain-craft-steps" id="chain-craft-steps"></div>
+        <button type="button" class="btn-close" id="btn-close-chain-craft">关闭</button>
+      </div>
+    </div>
+
+    <!-- 烹饪详情弹窗（交叉合成：配方 + 制作） -->
     <div id="modal-craft-detail" class="modal hidden">
       <div class="modal-content modal-craft-detail-content">
         <h3 class="craft-detail-title"></h3>

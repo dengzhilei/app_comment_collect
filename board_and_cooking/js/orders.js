@@ -126,21 +126,27 @@
     var map = document.getElementById('town-map');
     map.innerHTML = '';
     orders.forEach(function(slot, idx) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
+      var wrap = document.createElement('button');
+      wrap.type = 'button';
+      wrap.className = 'npc-slot-wrap' + (state.selectedOrderSlot === idx ? ' selected' : '');
+      wrap.dataset.slotIndex = idx;
       var canDeliver = slot.order && slot.order.items.every(function(need) { return getInv(need.id) >= (need.n || 1); });
-      btn.className = 'npc-avatar' + (state.selectedOrderSlot === idx ? ' selected' : '') + (canDeliver ? ' deliverable' : '');
-      btn.dataset.slotIndex = idx;
-      btn.textContent = slot.npc.emoji;
+      var avatar = document.createElement('span');
+      avatar.className = 'npc-avatar' + (canDeliver ? ' deliverable' : '');
+      avatar.textContent = slot.npc.emoji;
       if (canDeliver) {
         var badge = document.createElement('span');
         badge.className = 'npc-avatar-badge';
-        badge.setAttribute('aria-label', '可交付');
         badge.textContent = '✓';
-        btn.appendChild(badge);
+        avatar.appendChild(badge);
       }
-      btn.addEventListener('click', function() { selectOrderSlot(idx); });
-      map.appendChild(btn);
+      wrap.appendChild(avatar);
+      var nameEl = document.createElement('span');
+      nameEl.className = 'npc-slot-name';
+      nameEl.textContent = slot.npc.name;
+      wrap.appendChild(nameEl);
+      wrap.addEventListener('click', function() { selectOrderSlot(idx); });
+      map.appendChild(wrap);
     });
     if (state.selectedOrderSlot != null && orders[state.selectedOrderSlot]) {
       renderOrderDetail(state.selectedOrderSlot);
@@ -152,7 +158,7 @@
 
   function selectOrderSlot(slotIndex) {
     state.selectedOrderSlot = state.selectedOrderSlot === slotIndex ? null : slotIndex;
-    document.querySelectorAll('.npc-avatar').forEach(function(el) {
+    document.querySelectorAll('.npc-slot-wrap').forEach(function(el) {
       el.classList.toggle('selected', parseInt(el.dataset.slotIndex, 10) === state.selectedOrderSlot);
     });
     if (state.selectedOrderSlot != null) {
@@ -166,44 +172,49 @@
   function renderOrderDetail(slotIndex) {
     var slot = state.activeOrders && state.activeOrders[slotIndex];
     if (!slot) return;
-    var npc = slot.npc;
     var order = slot.order;
     document.querySelector('.no-order').classList.add('hidden');
     var content = document.getElementById('order-content');
     content.classList.remove('hidden');
-    document.getElementById('order-npc-name').textContent = npc.emoji + ' ' + npc.name + ' 的订单';
-    var rewardText = formatReward(order.reward);
+    var demandEl = document.getElementById('order-demand-line');
+    if (demandEl) {
+      var parts = [];
+      order.items.forEach(function(need) {
+        var have = getInv(need.id);
+        var ok = have >= (need.n || 1);
+        var known = isItemKnownToPlayer(need.id);
+        var info = getItemInfo(need.id);
+        var nameStr = known ? info.name : '???';
+        var needN = need.n || 1;
+        var span = document.createElement('span');
+        span.className = 'order-req-inline' + (ok ? ' done' : '');
+        span.innerHTML = info.emoji + nameStr + '(' + have + '/' + needN + ')';
+        parts.push(span);
+        if (known && !isBaseItem(need.id) && (CROSS_RECIPES || []).some(function(r) { return r.id === need.id; })) {
+          var detailBtn = document.createElement('button');
+          detailBtn.type = 'button';
+          detailBtn.className = 'btn-detail-inline';
+          detailBtn.textContent = '详情';
+          detailBtn.onclick = function() { openRecipeDetail(need.id); };
+          parts.push(detailBtn);
+        }
+      });
+      demandEl.innerHTML = '';
+      demandEl.appendChild(document.createTextNode('需求：'));
+      parts.forEach(function(node) { demandEl.appendChild(node); demandEl.appendChild(document.createTextNode(' ')); });
+    }
     var rewardEl = document.getElementById('order-reward');
     if (rewardEl) {
-      rewardEl.textContent = '完成可获得：' + (rewardText || '无');
+      var rewardText = formatReward(order.reward);
+      rewardEl.textContent = '奖励：' + (rewardText || '无');
       rewardEl.classList.toggle('hidden', !rewardText);
     }
-    var ul = document.getElementById('order-requirements');
-    ul.innerHTML = '';
-    var canSubmit = true;
-    order.items.forEach(function(need) {
-      var have = getInv(need.id);
-      var ok = have >= need.n;
-      if (!ok) canSubmit = false;
-      var known = isItemKnownToPlayer(need.id);
-      var showDetail = known && !ok && !isBaseItem(need.id) && getRecipeForItem(need.id);
-      var li = document.createElement('li');
-      li.className = 'order-req-row';
-      var nameStr = known ? (getItemName(need.id) + ' ×' + need.n) : ('??? ×' + need.n);
-      li.innerHTML = '<span class="' + (ok ? 'ok' : 'need') + '">' + nameStr + '</span> ' + (ok ? '✓' : (known ? '(已有' + have + ')' : ''));
-      if (showDetail) {
-        var detailBtn = document.createElement('button');
-        detailBtn.type = 'button';
-        detailBtn.className = 'btn-detail-inline';
-        detailBtn.textContent = '详情';
-        detailBtn.onclick = function() { openRecipeDetail(need.id); };
-        li.appendChild(detailBtn);
-      }
-      ul.appendChild(li);
-    });
+    var canSubmit = order.items.every(function(need) { return getInv(need.id) >= (need.n || 1); });
     var btn = document.getElementById('btn-submit-order');
-    btn.disabled = !canSubmit;
-    btn.onclick = function() { submitOrder(slotIndex); };
+    if (btn) {
+      btn.disabled = !canSubmit;
+      btn.onclick = function() { submitOrder(slotIndex); };
+    }
   }
 
   function submitOrder(slotIndex) {
@@ -229,6 +240,7 @@
     state.activeOrders[slotIndex] = { npc: pickRandomNpc(), order: generateOneOrder() };
     state.selectedOrderSlot = null;
     renderTownMap();
+    if (typeof renderMakingDesk === 'function') renderMakingDesk();
   }
 
   global.formatReward = formatReward;

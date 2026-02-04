@@ -141,23 +141,26 @@
       rec.needs.forEach(function(n) {
         var have = getInv(n.id);
         var ok = have >= n.n;
-        if (!ok) {
-          canCraft = false;
-          var info = getItemInfo(n.id);
-          missingNames.push(info.name);
-        }
+        if (!ok) canCraft = false;
         var row = document.createElement('div');
         row.className = 'formula-row' + (ok ? '' : ' missing');
         var info = getItemInfo(n.id);
         row.innerHTML = '<span>' + info.emoji + ' ' + info.name + ' (' + have + '/' + n.n + ')</span><span class="' + (ok ? 'formula-ok' : '') + '">' + (ok ? '✅' : '❌') + '</span>';
+        if (!ok && typeof openRecipeDetail === 'function') {
+          var detailBtn = document.createElement('button');
+          detailBtn.type = 'button';
+          detailBtn.className = 'btn-detail-inline craft-detail-detail-btn';
+          detailBtn.textContent = '详情';
+          detailBtn.onclick = (function(id) {
+            return function() {
+              if (typeof closeCraftDetail === 'function') closeCraftDetail();
+              openRecipeDetail(id);
+            };
+          })(n.id);
+          row.appendChild(detailBtn);
+        }
         formulaEl.appendChild(row);
       });
-      if (missingNames.length) {
-        var hint = document.createElement('p');
-        hint.className = 'formula-row missing craft-detail-missing-hint';
-        hint.textContent = '缺：' + missingNames.join('、');
-        formulaEl.appendChild(hint);
-      }
       var chefLevel = state.chefLevel || 1;
       var maxBatch = maxCrossCraftCount(rec);
       if (canCraft) {
@@ -171,8 +174,8 @@
             return function() {
               doCrossCraft(rec.id, cnt);
               closeCraftDetail();
-              renderCraftGrid();
-              renderCraftChain(state.currentChain);
+              if (typeof renderMakingDesk === 'function') renderMakingDesk();
+              if (typeof renderTownMap === 'function') renderTownMap();
             };
           })(c);
           buttonsEl.appendChild(btn);
@@ -215,14 +218,165 @@
     });
   }
 
+  var CHAIN_LABELS = { wheat: '主食', dairy: '乳制品', veggie: '蔬菜', protein: '蛋白质' };
+
+  /** 根据物品 id 得到所属链的 key（如 flour → wheat） */
+  function getChainKeyByItemId(itemId) {
+    if (!itemId || !CHAINS) return null;
+    for (var key in CHAINS) {
+      var chain = CHAINS[key];
+      if (!chain) continue;
+      for (var i = 0; i < chain.length; i++) {
+        if (chain[i].id === itemId) return key;
+      }
+    }
+    return null;
+  }
+
+  /** 制作台：主食/乳制品/蔬菜/蛋白质/合成品 各行，每格 icon+名称+数量，点击打开对应弹窗 */
+  function renderMakingDesk() {
+    var container = document.getElementById('craft-desk');
+    if (!container) return;
+    container.innerHTML = '';
+    var chainKeys = TILE_TYPES || ['wheat', 'dairy', 'veggie', 'protein'];
+    chainKeys.forEach(function(chainKey) {
+      var section = document.createElement('div');
+      section.className = 'craft-desk-section-row';
+      var label = document.createElement('div');
+      label.className = 'craft-desk-label';
+      label.textContent = '[' + (CHAIN_LABELS[chainKey] || chainKey) + ']';
+      section.appendChild(label);
+      var row = document.createElement('div');
+      row.className = 'craft-desk-row';
+      var chain = CHAINS[chainKey];
+      if (chain) {
+        var maxLevel = getMaxChainLevel(chainKey);
+        chain.forEach(function(item, level) {
+          if (level + 1 > maxLevel) return;
+          if (level > 0) {
+            var arrow = document.createElement('span');
+            arrow.className = 'craft-desk-arrow';
+            arrow.setAttribute('aria-hidden', 'true');
+            arrow.textContent = '›';
+            row.appendChild(arrow);
+          }
+          var cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'craft-desk-cell';
+          cell.dataset.itemId = item.id;
+          cell.dataset.chain = '1';
+          var count = getInv(item.id);
+          var lv = level + 1;
+          cell.innerHTML = '<span class="cell-lv">Lv' + lv + '</span><span class="cell-icon">' + item.emoji + '</span><span class="cell-name">' + item.name + '</span><span class="cell-count">×' + count + '</span>';
+          cell.onclick = function() {
+            if (CHAIN_RECIPES[item.id]) openChainCraftModal(item.id);
+            else {
+              var ck = getChainKeyByItemId(item.id);
+              if (ck && CHAINS[ck] && CHAINS[ck][1]) openChainCraftModal(CHAINS[ck][1].id);
+            }
+          };
+          row.appendChild(cell);
+        });
+      }
+      section.appendChild(row);
+      container.appendChild(section);
+    });
+    var crossSection = document.createElement('div');
+    crossSection.className = 'craft-desk-section-row';
+    var crossLabel = document.createElement('div');
+    crossLabel.className = 'craft-desk-label';
+    crossLabel.textContent = '[合成品]';
+    crossSection.appendChild(crossLabel);
+    var crossRow = document.createElement('div');
+    crossRow.className = 'craft-desk-row';
+    (CROSS_RECIPES || []).forEach(function(rec) {
+      var cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'craft-desk-cell';
+      var unlocked = isCrossRecipeUnlocked(rec);
+      var count = getInv(rec.id);
+      cell.innerHTML = '<span class="cell-icon">' + (unlocked ? rec.emoji : '?') + '</span><span class="cell-name">' + (unlocked ? rec.name : '???') + '</span><span class="cell-count">×' + count + '</span>';
+      cell.onclick = function() { openCraftDetail(rec); };
+      crossRow.appendChild(cell);
+    });
+    crossSection.appendChild(crossRow);
+    container.appendChild(crossSection);
+  }
+
+  /** 打开链内合成弹窗：显示该物品所属的完整合成链（所有可合成等级及其配方与按钮） */
+  function openChainCraftModal(itemId) {
+    var chainKey = getChainKeyByItemId(itemId);
+    if (!chainKey || !CHAINS[chainKey]) return;
+    var chain = CHAINS[chainKey];
+    var modal = document.getElementById('modal-chain-craft');
+    var titleEl = document.getElementById('chain-craft-title');
+    var stepsEl = document.getElementById('chain-craft-steps');
+    if (!modal || !titleEl || !stepsEl) return;
+    var chainLabel = CHAIN_LABELS[chainKey] || chainKey;
+    titleEl.textContent = chainLabel + ' · 链内合成';
+    stepsEl.innerHTML = '';
+    var maxLevel = getMaxChainLevel(chainKey);
+    var chefLevel = state.chefLevel || 1;
+    for (var i = 1; i < chain.length; i++) {
+      if (i + 1 > maxLevel) break;
+      var item = chain[i];
+      var recipe = CHAIN_RECIPES[item.id];
+      if (!recipe) continue;
+      var info = getItemInfo(item.id);
+      var fromInfo = getItemInfo(recipe.from);
+      var have = getInv(recipe.from);
+      var maxCount = Math.floor(have / recipe.count);
+      var counts = getBatchCountsToShow(chefLevel, maxCount);
+      var stepDiv = document.createElement('div');
+      stepDiv.className = 'chain-step';
+      var titleSpan = document.createElement('div');
+      titleSpan.className = 'chain-step-title';
+      titleSpan.innerHTML = 'Lv' + (i + 1) + ' ' + info.emoji + ' ' + info.name + ' <span class="chain-step-count">×' + getInv(item.id) + '</span>';
+      stepDiv.appendChild(titleSpan);
+      var formulaSpan = document.createElement('div');
+      formulaSpan.className = 'chain-step-formula';
+      formulaSpan.textContent = '需要：' + fromInfo.emoji + ' ' + fromInfo.name + ' ×' + recipe.count + '（当前 ' + have + '）';
+      stepDiv.appendChild(formulaSpan);
+      var btnWrap = document.createElement('div');
+      btnWrap.className = 'chain-step-buttons';
+      counts.forEach(function(c) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-craft';
+        btn.textContent = c === 1 && counts.length === 1 ? '合成' : (c === 1 ? '合成×1' : '合成×' + c);
+        btn.disabled = maxCount < c;
+        (function(tid, cnt) {
+          btn.onclick = function() {
+            doChainCraft(tid, cnt);
+            closeChainCraftModal();
+            renderMakingDesk();
+            if (typeof renderTownMap === 'function') renderTownMap();
+            openChainCraftModal(itemId);
+          };
+        })(item.id, c);
+        btnWrap.appendChild(btn);
+      });
+      stepDiv.appendChild(btnWrap);
+      stepsEl.appendChild(stepDiv);
+    }
+    modal.classList.remove('hidden');
+  }
+
+  function closeChainCraftModal() {
+    var modal = document.getElementById('modal-chain-craft');
+    if (modal) modal.classList.add('hidden');
+  }
+
   function renderCraftChain(chainKey) {
     state.currentChain = chainKey;
-    document.querySelectorAll('.craft-tab').forEach(function(t) {
-      t.classList.toggle('active', t.dataset.chain === chainKey);
-    });
-    fillCraftContainers(chainKey, document.getElementById('craft-chain'), function() { renderCraftChain(state.currentChain); });
-    renderCraftGrid();
-    bindCraftFilterOnce();
+    var chainContainer = document.getElementById('craft-chain');
+    if (chainContainer) {
+      document.querySelectorAll('.craft-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.chain === chainKey); });
+      fillCraftContainers(chainKey, chainContainer, function() { renderCraftChain(state.currentChain); });
+    }
+    var grid = document.getElementById('craft-grid');
+    if (grid) { renderCraftGrid(); bindCraftFilterOnce(); }
+    renderMakingDesk();
   }
 
   /** count 默认 1；批量合成时传入 3 或 5 */
@@ -268,8 +422,11 @@
   global.fillCraftContainers = fillCraftContainers;
   global.renderCraftChain = renderCraftChain;
   global.renderCraftGrid = renderCraftGrid;
+  global.renderMakingDesk = renderMakingDesk;
   global.doChainCraft = doChainCraft;
   global.doCrossCraft = doCrossCraft;
   global.openCraftDetail = openCraftDetail;
   global.closeCraftDetail = closeCraftDetail;
+  global.openChainCraftModal = openChainCraftModal;
+  global.closeChainCraftModal = closeChainCraftModal;
 })(typeof window !== 'undefined' ? window : this);
