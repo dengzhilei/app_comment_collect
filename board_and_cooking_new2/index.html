@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Board & Cooking - 竖版烹饪 Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app" class="vertical-app">
+    <!-- 顶部资源栏 -->
+    <header class="top-bar">
+      <div class="top-resources">
+        <div class="dice-count">
+          <span class="icon">🎲</span>
+          <span id="dice-num">20</span>
+        </div>
+        <div class="chef-level" id="chef-level-wrap" title="厨师经验">
+          <span class="icon">👨‍🍳</span>
+          <span id="chef-level-num">Lv.1</span>
+          <div class="chef-exp-bar" id="chef-exp-bar" aria-hidden="true">
+            <div class="chef-exp-fill" id="chef-exp-fill"></div>
+          </div>
+        </div>
+      </div>
+      <nav class="tabs">
+        <button type="button" class="tab active" data-tab="board">走格子</button>
+        <button type="button" class="tab" data-tab="orders">订单与制作</button>
+        <button type="button" class="tab" data-tab="gm">GM</button>
+      </nav>
+      <button type="button" class="btn-inventory" id="btn-inventory" title="背包">🎒</button>
+    </header>
+
+    <!-- 模块1：走格子 -->
+    <section id="panel-board" class="panel active">
+      <div id="board-gain" class="board-gain" aria-label="本次获得">
+        <span class="board-gain-placeholder">—</span>
+      </div>
+      <div class="board-wrap">
+        <div class="board-inner" id="board-inner">
+          <div id="board" class="board"></div>
+          <div id="player-token" class="player-token">🐻</div>
+        </div>
+        <!-- 掷骰子结果：独立显示在棋盘中央偏上（在视口内） -->
+        <div id="board-dice-result" class="board-dice-result hidden" aria-label="骰子点数">
+          <span class="board-dice-label">点数</span>
+          <span id="board-dice-value" class="board-dice-value">0</span>
+        </div>
+      </div>
+      <div class="board-actions">
+        <div class="bet-row">
+          <span>倍率</span>
+          <button type="button" id="bet-cycle-btn" class="btn-bet-cycle" title="点击切换">×1</button>
+        </div>
+        <button type="button" id="btn-roll" class="btn-roll">掷骰子 🎲</button>
+      </div>
+    </section>
+
+    <!-- 模块2：订单与制作（合并） -->
+    <section id="panel-orders" class="panel panel-orders-craft">
+      <div class="order-section">
+        <div class="town-map town-map-narrow" id="town-map"></div>
+        <div class="order-detail" id="order-detail">
+          <p class="no-order">点击 NPC 查看订单</p>
+          <div class="order-content hidden" id="order-content">
+            <div class="order-main-row">
+              <p class="order-demand-line" id="order-demand-line"></p>
+              <div class="order-reward-row">
+                <p id="order-reward" class="order-reward"></p>
+                <button type="button" id="btn-submit-order" class="btn-submit">提交</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="craft-desk-section">
+        <h4 class="craft-desk-title">制作台</h4>
+        <div id="craft-desk" class="craft-desk"></div>
+      </div>
+    </section>
+
+    <!-- 模块3：GM -->
+    <section id="panel-gm" class="panel panel-gm">
+      <div class="gm-section">
+        <h4 class="gm-section-title">骰子</h4>
+        <div class="gm-row-wrap">
+          <button type="button" id="btn-gm-dice" class="gm-btn">+20 骰子</button>
+          <label class="gm-row">
+            <span>下次点数</span>
+            <input type="number" id="gm-next-roll" min="2" max="12" value="7" class="gm-input" />
+            <button type="button" id="btn-gm-set-roll" class="gm-btn">指定</button>
+          </label>
+        </div>
+      </div>
+      <div class="gm-section">
+        <h4 class="gm-section-title">经验</h4>
+        <div class="gm-row-wrap">
+          <input type="number" id="gm-exp" min="0" value="50" class="gm-input gm-input-num" />
+          <button type="button" id="btn-gm-add-exp" class="gm-btn">加经验</button>
+        </div>
+      </div>
+      <div class="gm-section">
+        <h4 class="gm-section-title">食材</h4>
+        <div class="gm-row-wrap">
+          <button type="button" id="btn-gm-add-base" class="gm-btn">每种基础食材 +5</button>
+        </div>
+        <div class="gm-row-wrap gm-add-item-row">
+          <select id="gm-item-select" class="gm-select"></select>
+          <input type="number" id="gm-item-qty" min="1" value="1" class="gm-input gm-input-num" />
+          <button type="button" id="btn-gm-add-item" class="gm-btn">添加</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 配方详情弹窗（v3：仅说明如何合成） -->
+    <div id="modal-recipe-detail" class="modal hidden">
+      <div class="modal-content">
+        <h3 class="recipe-detail-title"></h3>
+        <div class="recipe-detail-body"></div>
+        <button type="button" class="btn-recipe-back hidden">返回</button>
+        <button type="button" class="btn-close" id="btn-close-recipe-detail">关闭</button>
+      </div>
+    </div>
+
+    <!-- 厨师升级弹窗（v3：本次解锁的基础/合成菜品 + 仪式感） -->
+    <div id="modal-level-up" class="modal hidden">
+      <div class="modal-content modal-level-up-content">
+        <div class="level-up-header">
+          <span class="level-up-badge">🎉</span>
+          <h2 class="level-up-title">厨师升级！</h2>
+          <p class="level-up-subtitle level-up-promotion" id="level-up-promotion">晋升成为 正式厨师</p>
+          <p class="level-up-lv-num" id="level-up-lv">Lv.2</p>
+        </div>
+        <div class="level-up-unlocks">
+          <h4 class="level-up-section-title">新解锁 · 基础菜品</h4>
+          <ul id="level-up-chain-list" class="level-up-list level-up-new-list"></ul>
+          <h4 class="level-up-section-title">新解锁 · 合成菜品</h4>
+          <ul id="level-up-cross-list" class="level-up-list level-up-new-list"></ul>
+        </div>
+        <button type="button" class="btn-level-up-ok" id="btn-close-level-up">太棒了！</button>
+      </div>
+    </div>
+
+    <!-- 链内合成弹窗（完整链：该链所有可合成等级） -->
+    <div id="modal-chain-craft" class="modal hidden">
+      <div class="modal-content modal-chain-craft-content">
+        <h3 class="chain-craft-title" id="chain-craft-title"></h3>
+        <div class="chain-craft-steps" id="chain-craft-steps"></div>
+        <button type="button" class="btn-close" id="btn-close-chain-craft">关闭</button>
+      </div>
+    </div>
+
+    <!-- 烹饪详情弹窗（交叉合成：配方 + 制作） -->
+    <div id="modal-craft-detail" class="modal hidden">
+      <div class="modal-content modal-craft-detail-content">
+        <h3 class="craft-detail-title"></h3>
+        <div class="craft-detail-formula" id="craft-detail-formula"></div>
+        <div class="craft-detail-buttons" id="craft-detail-buttons"></div>
+        <button type="button" class="btn-close" id="btn-close-craft-detail">关闭</button>
+      </div>
+    </div>
+
+    <!-- 背包弹窗 -->
+    <div id="modal-inventory" class="modal hidden">
+      <div class="modal-content">
+        <h3>背包</h3>
+        <div id="inventory-list" class="inventory-list"></div>
+        <button type="button" class="btn-close" id="btn-close-inventory">关闭</button>
+      </div>
+    </div>
+
+    <!-- 掷骰结果提示 -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+  <script src="config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/items.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/modals.js"></script>
+  <script src="js/orders.js"></script>
+  <script src="js/craft.js"></script>
+  <script src="js/game.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
