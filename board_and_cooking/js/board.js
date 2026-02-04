@@ -106,7 +106,9 @@
               _diceResultHideTid = null;
             }, DICE_RESULT_STAY_MS);
             var tileType = state.boardTiles[state.position];
-            var dropTable = TILE_DROP_TABLES[tileType] || [{ id: TILE_GAIN[tileType], weight: 100 }];
+            var rawTable = TILE_DROP_TABLES[tileType] || [{ id: TILE_GAIN[tileType], weight: 100 }];
+            var dropTable = rawTable.filter(function(e) { return isChainItemUnlocked(e.id); });
+            if (dropTable.length === 0) dropTable = [{ id: TILE_GAIN[tileType], weight: 100 }];
             var gainId = pickFromDropTable(dropTable);
             var qty = state.bet;
             addInv(gainId, qty);
@@ -248,6 +250,88 @@
     toast._tid = setTimeout(function() { toast.classList.add('hidden'); }, duration);
   }
 
+  function updateChefUI() {
+    var el = document.getElementById('chef-level-num');
+    var wrap = document.getElementById('chef-level-wrap');
+    var fill = document.getElementById('chef-exp-fill');
+    if (!el) return;
+    var level = state.chefLevel || 1;
+    var exp = state.chefExp || 0;
+    el.textContent = 'Lv.' + level;
+    var next = CHEF_EXP_THRESHOLDS && CHEF_EXP_THRESHOLDS[level - 1];
+    if (wrap) {
+      wrap.title = level >= 4 ? '厨师经验：已满级' : ('经验 ' + exp + (next != null ? ' / 升Lv.' + (level + 1) + ' 需 ' + next : ''));
+      wrap.classList.toggle('chef-max', level >= 4);
+    }
+    if (fill) {
+      if (level >= 4) {
+        fill.style.width = '100%';
+      } else if (next != null && next > 0) {
+        var pct = Math.min(100, Math.floor((exp / next) * 100));
+        fill.style.width = pct + '%';
+      } else {
+        fill.style.width = '0%';
+      }
+    }
+  }
+
+  /** v3：计算指定厨师等级本次解锁的链内物品与交叉配方 */
+  function getUnlocksAtLevel(level) {
+    var chainList = [];
+    var prevMaxByLevel = level === 1 ? null : (CHEF_LEVEL_CHAIN_MAX && CHEF_LEVEL_CHAIN_MAX[level - 1]);
+    var currMaxByLevel = (CHEF_LEVEL_CHAIN_MAX && CHEF_LEVEL_CHAIN_MAX[level]) || {};
+    for (var chainKey in CHAINS) {
+      if (!CHAINS[chainKey]) continue;
+      var prevMax = (prevMaxByLevel && prevMaxByLevel[chainKey]) || 0;
+      var currMax = currMaxByLevel[chainKey] || 0;
+      for (var i = prevMax; i < currMax; i++) {
+        chainList.push(CHAINS[chainKey][i]);
+      }
+    }
+    var crossList = (CROSS_RECIPES || []).filter(function(r) {
+      return (r.unlockChefLevel != null ? r.unlockChefLevel : 1) === level;
+    });
+    return { chain: chainList, cross: crossList };
+  }
+
+  var _levelUpModalBound = false;
+  /** v3：显示厨师升级弹窗（本次解锁的基础/合成菜品 + 仪式感） */
+  function showLevelUpModal(newLevel) {
+    var modal = document.getElementById('modal-level-up');
+    var promotionEl = document.getElementById('level-up-promotion');
+    var lvEl = document.getElementById('level-up-lv');
+    var chainListEl = document.getElementById('level-up-chain-list');
+    var crossListEl = document.getElementById('level-up-cross-list');
+    if (!modal || !chainListEl || !crossListEl) return;
+    if (!_levelUpModalBound) {
+      _levelUpModalBound = true;
+      var btn = document.getElementById('btn-close-level-up');
+      if (btn) btn.addEventListener('click', function() {
+        modal.classList.add('hidden');
+        if (typeof updateChefUI === 'function') updateChefUI();
+      });
+    }
+    var unlocks = getUnlocksAtLevel(newLevel);
+    var title = (typeof CHEF_LEVEL_TITLES !== 'undefined' && CHEF_LEVEL_TITLES[newLevel]) ? CHEF_LEVEL_TITLES[newLevel] : 'Lv.' + newLevel;
+    if (promotionEl) promotionEl.textContent = '晋升成为 <' + title + '>！';
+    if (lvEl) lvEl.textContent = 'Lv.' + newLevel;
+    chainListEl.innerHTML = '';
+    unlocks.chain.forEach(function(item) {
+      var li = document.createElement('li');
+      li.className = 'level-up-new-item';
+      li.innerHTML = '<span class="level-up-new-tag">新</span>' + item.emoji + ' ' + item.name;
+      chainListEl.appendChild(li);
+    });
+    crossListEl.innerHTML = '';
+    unlocks.cross.forEach(function(rec) {
+      var li = document.createElement('li');
+      li.className = 'level-up-new-item';
+      li.innerHTML = '<span class="level-up-new-tag">新</span>' + (rec.emoji || '') + ' ' + (rec.name || rec.id);
+      crossListEl.appendChild(li);
+    });
+    modal.classList.remove('hidden');
+  }
+
   global.pathIndexAt = pathIndexAt;
   global.initBoard = initBoard;
   global.updatePlayerToken = updatePlayerToken;
@@ -265,4 +349,7 @@
   global.gmAddDice = gmAddDice;
   global.updateDiceUI = updateDiceUI;
   global.showToast = showToast;
+  global.updateChefUI = updateChefUI;
+  global.getUnlocksAtLevel = getUnlocksAtLevel;
+  global.showLevelUpModal = showLevelUpModal;
 })(typeof window !== 'undefined' ? window : this);

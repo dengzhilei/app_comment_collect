@@ -40,13 +40,34 @@ body {
   flex-shrink: 0;
 }
 
-.dice-count {
+.top-resources {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.dice-count,
+.chef-level {
   display: flex;
   align-items: center;
   gap: 6px;
   font-weight: bold;
   font-size: 1.1rem;
 }
+.chef-level .icon { font-size: 1rem; }
+.chef-exp-bar {
+  width: 36px;
+  height: 6px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.chef-exp-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+.chef-level.chef-max .chef-exp-fill { background: #7ab88a; }
 
 .tabs {
   display: flex;
@@ -370,6 +391,24 @@ body {
 
 .npc-avatar:hover { transform: scale(1.05); }
 .npc-avatar.selected { border-color: var(--accent); }
+.npc-avatar.deliverable { position: relative; border-color: #5a9c6a; box-shadow: 0 0 12px rgba(90, 156, 106, 0.5); }
+.npc-avatar-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #5a9c6a;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--card);
+  pointer-events: none;
+}
 
 .order-detail {
   background: var(--card);
@@ -491,6 +530,89 @@ body {
 
 .craft-tab.active { background: var(--accent); color: var(--bg); }
 
+/* 制作页上下分区（仅当本面板为 active 时显示，避免在走格子/订单页重复出现） */
+.panel.active.panel-craft {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.craft-section-a {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+.craft-section-a .craft-tabs { margin-bottom: 8px; }
+.craft-section-a .craft-chain {
+  padding: 10px 12px;
+  margin-bottom: 0;
+}
+.craft-section-b {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px;
+}
+.craft-filter-bar {
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+.craft-filter-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.craft-filter-tab {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.1);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.craft-filter-tab.active { background: var(--accent); color: var(--bg); }
+.craft-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.craft-filter-check input { margin: 0; }
+.craft-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  overflow-y: auto;
+  align-content: start;
+}
+.craft-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  min-height: 72px;
+  transition: background 0.2s;
+}
+.craft-card:hover { background: rgba(255,255,255,0.08); }
+.craft-card .craft-card-icon { font-size: 1.8rem; margin-bottom: 2px; }
+.craft-card .craft-card-name { font-size: 0.7rem; text-align: center; line-height: 1.2; color: var(--text); }
+.craft-card .craft-card-lv { position: absolute; top: 4px; left: 4px; font-size: 0.65rem; color: var(--muted); }
+.craft-card .craft-card-status { position: absolute; top: 4px; right: 4px; font-size: 0.65rem; }
+.craft-card.craft-card-locked .craft-card-status { color: var(--muted); }
+.craft-card.craft-card-makeable .craft-card-status { color: #7ab88a; }
+.craft-card.craft-card-short .craft-card-status { color: #e07; }
+.craft-detail-missing-hint { margin-top: 8px; font-size: 0.9rem; }
+
 .craft-chain {
   background: var(--card);
   border-radius: 12px;
@@ -538,6 +660,20 @@ body {
 
 .btn-craft:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.craft-chain-buttons { display: flex; gap: 6px; flex-wrap: wrap; margin-left: 4px; }
+
+/* 烹饪详情弹窗 */
+.modal-craft-detail-content .craft-detail-title { margin-top: 0; display: flex; align-items: center; gap: 8px; }
+.craft-detail-formula { margin: 12px 0; }
+.craft-detail-formula .formula-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+.craft-detail-formula .formula-row.missing { color: #e07; }
+.craft-detail-formula .formula-row .formula-ok { color: #7ab88a; }
+.craft-detail-buttons { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.craft-detail-buttons .btn-craft-make { width: 100%; }
+.btn-craft-make { width: 100%; padding: 12px; margin-bottom: 0; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+.btn-craft-make:not(:disabled) { background: var(--accent); color: var(--bg); }
+.btn-craft-make:disabled { background: rgba(255,255,255,0.15); color: var(--muted); cursor: not-allowed; }
+
 .cross-craft {
   background: var(--card);
   border-radius: 12px;
@@ -578,6 +714,129 @@ body {
   width: 100%;
   max-height: 70vh;
   overflow: auto;
+}
+
+/* v3：厨师升级弹窗 + 仪式感 */
+#modal-level-up .modal-content {
+  background: linear-gradient(180deg, #3d3935 0%, #2d2a26 100%);
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 32px rgba(232, 184, 109, 0.4), 0 0 64px rgba(0,0,0,0.3);
+  animation: levelUpModalIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+#modal-level-up:not(.hidden) {
+  animation: levelUpBackdropIn 0.3s ease forwards;
+}
+.level-up-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.level-up-badge {
+  display: block;
+  font-size: 3rem;
+  margin-bottom: 8px;
+  animation: levelUpBounce 0.6s ease 0.2s both;
+}
+.level-up-title {
+  font-size: 1.5rem;
+  margin: 0 0 4px 0;
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(232, 184, 109, 0.5);
+  animation: levelUpFadeIn 0.4s ease 0.1s both;
+}
+.level-up-promotion {
+  font-size: 1.35rem;
+  font-weight: bold;
+  margin: 0 0 4px 0;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  animation: levelUpScaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+.level-up-lv-num {
+  font-size: 1rem;
+  margin: 0;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  animation: levelUpFadeIn 0.4s ease 0.25s both;
+}
+.level-up-unlocks {
+  margin: 16px 0;
+  animation: levelUpFadeIn 0.4s ease 0.3s both;
+}
+.level-up-section-title {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 12px 0 6px 0;
+}
+.level-up-section-title:first-child { margin-top: 0; }
+#modal-level-up .level-up-section-title { color: rgba(232, 184, 109, 0.9); font-weight: 600; }
+.level-up-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.level-up-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+.level-up-new-item {
+  position: relative;
+  background: rgba(232, 184, 109, 0.12);
+  border: 1px solid rgba(232, 184, 109, 0.35);
+}
+.level-up-new-tag {
+  display: inline-block;
+  padding: 1px 5px;
+  margin-right: 2px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: var(--bg);
+  background: var(--accent);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+.btn-level-up-ok {
+  width: 100%;
+  padding: 14px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--accent), #c99a4a);
+  color: var(--bg);
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(232, 184, 109, 0.3);
+  animation: levelUpFadeIn 0.4s ease 0.4s both;
+}
+.btn-level-up-ok:hover { filter: brightness(1.1); }
+.btn-level-up-ok:active { transform: scale(0.98); }
+@keyframes levelUpBackdropIn {
+  from { background: rgba(0,0,0,0); }
+  to { background: rgba(0,0,0,0.65); }
+}
+@keyframes levelUpModalIn {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes levelUpBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+@keyframes levelUpFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes levelUpScaleIn {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .modal-content h3 { margin-top: 0; }

@@ -27,6 +27,7 @@
     updateBetUI();
     updateBoardGainUI();
     updateDiceResultUI();
+    if (typeof updateChefUI === 'function') updateChefUI();
   }
 
   global.switchTab = switchTab;

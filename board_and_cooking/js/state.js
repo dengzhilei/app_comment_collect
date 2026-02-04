@@ -13,7 +13,13 @@
     recipeDetailStack: [],
     lastRollSteps: 0,
     lastGain: null,
-    moving: false
+    moving: false,
+    chefLevel: 1,
+    chefExp: 0,
+    craftFilterCategory: 'all',
+    craftOnlyMakeable: false,
+    activeOrders: [],
+    selectedOrderSlot: null
   };
 
   function getInv(id) {

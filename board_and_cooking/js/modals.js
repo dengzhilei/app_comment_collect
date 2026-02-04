@@ -95,7 +95,10 @@
         var node = document.createElement('span');
         node.className = 'chain-node';
         if (item.id === itemId) node.classList.add('chain-target');
-        node.textContent = 'Lv' + (index + 1) + ' ' + item.emoji + ' ' + item.name;
+        var unlocked = typeof isChainItemUnlocked === 'function' && isChainItemUnlocked(item.id);
+        var emoji = unlocked ? item.emoji : '?';
+        var name = unlocked ? item.name : '???';
+        node.textContent = 'Lv' + (index + 1) + ' ' + emoji + ' ' + name;
         flow.appendChild(node);
         if (index < chain.length - 1) {
           var arrow = document.createElement('span');
@@ -116,8 +119,11 @@
     recipe.ingredients.forEach(function(ing) {
       var li = document.createElement('li');
       var ingInfo = getItemInfo(ing.id);
-      li.appendChild(document.createTextNode(ingInfo.emoji + ' ' + ingInfo.name + ' ×' + ing.n));
-      if (!isBaseItem(ing.id)) {
+      var known = typeof isItemKnownToPlayer === 'function' && isItemKnownToPlayer(ing.id);
+      var ingEmoji = known ? ingInfo.emoji : '?';
+      var ingName = known ? ingInfo.name : '???';
+      li.appendChild(document.createTextNode(ingEmoji + ' ' + ingName + ' ×' + ing.n));
+      if (!isBaseItem(ing.id) && known) {
         var detailBtn = document.createElement('button');
         detailBtn.type = 'button';
         detailBtn.className = 'btn-detail-inline';
