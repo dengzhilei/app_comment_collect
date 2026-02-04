@@ -89,15 +89,6 @@ body {
   color: var(--bg);
 }
 
-.btn-inventory {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.15);
-  cursor: pointer;
-  font-size: 1.2rem;
-}
-
 /* 面板切换 */
 .panel {
   display: none;
@@ -1014,36 +1005,6 @@ body {
 .modal-content h3 { margin-top: 0; }
 .modal-craft-content .craft-chain { margin-bottom: 12px; }
 .modal-craft-content .btn-close { margin-top: 12px; }
-.inventory-list {
-  margin: 16px 0;
-}
-
-.inv-chain-row {
-  margin-bottom: 14px;
-}
-.inv-chain-row:last-of-type { margin-bottom: 10px; }
-.inv-chain-label {
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-.inv-chain-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.inv-item-cross {
-  margin-top: 4px;
-}
-
-.inv-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 8px;
-}
 
 .btn-close {
   width: 100%;

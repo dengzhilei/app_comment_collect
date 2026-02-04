@@ -3,29 +3,23 @@
  * 棋盘产出、掉落表、基础物品均由「地格→合成链」+ 链数据 推导，避免重复书写 id。
  */
 
-// ---------- 棋盘外观（地格类型与展示，与合成链 CHAINS 的 key 统一） ----------
-const TILE_TYPES = ['wheat', 'dairy', 'veggie', 'protein'];
-/** 四种基础地格在「可分配格」中的数量（对象形式，键为地格类型 = 链名）。总和须等于可分配格数。未配置或总和不对时按原逻辑均分。 */
-const TILE_COUNTS = { wheat: 11, dairy: 7, veggie: 6, protein: 5};
-const TILE_EMOJI = { wheat: '🌾', dairy: '🥛', veggie: '🥬', protein: '🥚' };
+// ---------- 棋盘外观（地格类型与展示，与合成链 CHAINS 的 key 统一）v2：3 条链，删除牛奶 ----------
+const TILE_TYPES = ['wheat', 'veggie', 'protein'];
+/** 三种基础地格在「可分配格」中的数量，总和须等于可分配格数。 */
+const TILE_COUNTS = { wheat: 10, veggie: 10, protein: 9 };
+const TILE_EMOJI = { wheat: '🌾', veggie: '🥬', protein: '🥚' };
 const TILE_IMAGE = {
   wheat: 'img/tiles/wheat.png',
-  dairy: 'img/tiles/milk.png',
   veggie: 'img/tiles/tomato.png',
   protein: 'img/tiles/egg.png'
 };
 
-// ---------- 合成链（权威数据源：每条链 Lv1→Lv2→…→LvN） ----------
+// ---------- 合成链（权威数据源：每条链 Lv1→Lv2→…→LvN）v2：删除牛奶链 ----------
 const CHAINS = {
   wheat: [
     { id: 'wheat', name: '小麦', emoji: '🌾' },
     { id: 'flour', name: '面粉', emoji: '🥡' },
     { id: 'bread', name: '面包', emoji: '🍞' }
-  ],
-  dairy: [
-    { id: 'milk', name: '牛奶', emoji: '🥛' },
-    { id: 'butter', name: '黄油', emoji: '🧈' },
-    { id: 'cheese', name: '芝士', emoji: '🧀' }
   ],
   veggie: [
     { id: 'lettuce', name: '生菜', emoji: '🥬' },
@@ -110,12 +104,10 @@ const BOARD_QUESTION_PATH_INDICES = [12, 26, 37];
 // 未配置 BOARD_QUESTION_PATH_INDICES 时，从非飞机场、非角格中随机抽取的数量
 const BOARD_QUESTION_MARK_COUNT = 3;
 
-// ---------- 链内合成配方（Lv2+ 由下级合成） ----------
+// ---------- 链内合成配方（Lv2+ 由下级合成）v2：删除牛奶链配方 ----------
 const CHAIN_RECIPES = {
   flour: { from: 'wheat', count: 2 },
   bread: { from: 'flour', count: 2 },
-  butter: { from: 'milk', count: 2 },
-  cheese: { from: 'butter', count: 2 },
   tomato: { from: 'lettuce', count: 2 },
   potato: { from: 'tomato', count: 2 },
   mushroom: { from: 'potato', count: 2 },
@@ -124,13 +116,13 @@ const CHAIN_RECIPES = {
   steak: { from: 'drumstick', count: 2 }
 };
 
-// ---------- 厨师等级与节奏（v1） ----------
-// 每级（1-4）每条链允许的最大等级（1-based）
+// ---------- 厨师等级与节奏（v2：3 条链，新节奏） ----------
+// Lv1：谷物 3 级 + 其他 2 级；Lv2：开放 3 级链；Lv3：开放 4 级链；Lv4：交叉合成
 const CHEF_LEVEL_CHAIN_MAX = {
-  1: { wheat: 2, dairy: 1, veggie: 1, protein: 1 },
-  2: { wheat: 3, dairy: 2, veggie: 2, protein: 2 },
-  3: { wheat: 3, dairy: 3, veggie: 3, protein: 3 },
-  4: { wheat: 3, dairy: 3, veggie: 4, protein: 4 }
+  1: { wheat: 3, veggie: 2, protein: 2 },
+  2: { wheat: 3, veggie: 3, protein: 3 },
+  3: { wheat: 3, veggie: 4, protein: 4 },
+  4: { wheat: 3, veggie: 4, protein: 4 }
 };
 // 达到 2/3/4 级所需累计经验
 const CHEF_EXP_THRESHOLDS = [50, 150, 300];
@@ -142,22 +134,15 @@ const CHEF_LEVEL_TITLES = {
   4: '传奇厨师'
 };
 
-// ---------- 交叉合成（含解锁等级与分类） ----------
+// ---------- 交叉合成（v2：删除牛奶链后仅保留不含奶制品配方，Lv4 统一开放） ----------
 const CROSS_RECIPES = [
-  { id: 'pancakes', name: '松饼', emoji: '🥞', needs: [{ id: 'flour', n: 1 }, { id: 'milk', n: 1 }], unlockChefLevel: 1, category: 'breakfast' },
-  { id: 'fresh_pasta', name: '生鲜意面', emoji: '🍝', needs: [{ id: 'flour', n: 1 }, { id: 'egg', n: 1 }], unlockChefLevel: 1, category: 'main' },
-  { id: 'egg_salad', name: '鸡蛋沙拉', emoji: '🥗', needs: [{ id: 'egg', n: 1 }, { id: 'lettuce', n: 1 }], unlockChefLevel: 1, category: 'main' },
-  { id: 'butter_toast', name: '经典吐司', emoji: '🍞', needs: [{ id: 'bread', n: 1 }, { id: 'butter', n: 1 }], unlockChefLevel: 2, category: 'breakfast' },
-  { id: 'blt', name: 'BLT三明治', emoji: '🥪', needs: [{ id: 'bread', n: 1 }, { id: 'bacon', n: 1 }, { id: 'lettuce', n: 1 }], unlockChefLevel: 2, category: 'main' },
-  { id: 'tomato_pasta', name: '番茄意面', emoji: '🍝', needs: [{ id: 'flour', n: 1 }, { id: 'tomato', n: 1 }], unlockChefLevel: 2, category: 'main' },
-  { id: 'breakfast_plate', name: '英式早餐', emoji: '🍳', needs: [{ id: 'bread', n: 1 }, { id: 'egg', n: 1 }, { id: 'bacon', n: 1 }], unlockChefLevel: 2, category: 'breakfast' },
-  { id: 'fried_chicken', name: '炸鸡', emoji: '🍗', needs: [{ id: 'flour', n: 1 }, { id: 'drumstick', n: 1 }], unlockChefLevel: 3, category: 'main' },
-  { id: 'fries', name: '炸薯条', emoji: '🍟', needs: [{ id: 'potato', n: 1 }, { id: 'butter', n: 1 }], unlockChefLevel: 3, category: 'main' },
-  { id: 'pizza', name: '玛格丽特披萨', emoji: '🍕', needs: [{ id: 'flour', n: 1 }, { id: 'tomato', n: 1 }, { id: 'cheese', n: 1 }], unlockChefLevel: 3, category: 'main' },
-  { id: 'baked_potato', name: '芝士焗土豆', emoji: '🥔', needs: [{ id: 'potato', n: 1 }, { id: 'cheese', n: 1 }, { id: 'bacon', n: 1 }], unlockChefLevel: 3, category: 'main' },
-  { id: 'wellington', name: '惠灵顿牛排', emoji: '🥩', needs: [{ id: 'bread', n: 1 }, { id: 'steak', n: 1 }, { id: 'mushroom', n: 1 }], unlockChefLevel: 4, category: 'main' },
-  { id: 'steak_mash', name: '牛排配薯泥', emoji: '🍽️', needs: [{ id: 'steak', n: 1 }, { id: 'potato', n: 1 }, { id: 'butter', n: 1 }], unlockChefLevel: 4, category: 'main' },
-  { id: 'mushroom_soup', name: '奶油蘑菇汤', emoji: '🍲', needs: [{ id: 'mushroom', n: 1 }, { id: 'milk', n: 1 }, { id: 'flour', n: 1 }], unlockChefLevel: 4, category: 'main' }
+  { id: 'fresh_pasta', name: '生鲜意面', emoji: '🍝', needs: [{ id: 'flour', n: 1 }, { id: 'egg', n: 1 }], unlockChefLevel: 4, category: 'main' },
+  { id: 'egg_salad', name: '鸡蛋沙拉', emoji: '🥗', needs: [{ id: 'egg', n: 1 }, { id: 'lettuce', n: 1 }], unlockChefLevel: 4, category: 'main' },
+  { id: 'blt', name: 'BLT三明治', emoji: '🥪', needs: [{ id: 'bread', n: 1 }, { id: 'bacon', n: 1 }, { id: 'lettuce', n: 1 }], unlockChefLevel: 4, category: 'main' },
+  { id: 'tomato_pasta', name: '番茄意面', emoji: '🍝', needs: [{ id: 'flour', n: 1 }, { id: 'tomato', n: 1 }], unlockChefLevel: 4, category: 'main' },
+  { id: 'breakfast_plate', name: '英式早餐', emoji: '🍳', needs: [{ id: 'bread', n: 1 }, { id: 'egg', n: 1 }, { id: 'bacon', n: 1 }], unlockChefLevel: 4, category: 'breakfast' },
+  { id: 'fried_chicken', name: '炸鸡', emoji: '🍗', needs: [{ id: 'flour', n: 1 }, { id: 'drumstick', n: 1 }], unlockChefLevel: 4, category: 'main' },
+  { id: 'wellington', name: '惠灵顿牛排', emoji: '🥩', needs: [{ id: 'bread', n: 1 }, { id: 'steak', n: 1 }, { id: 'mushroom', n: 1 }], unlockChefLevel: 4, category: 'main' }
 ];
 
 const BET_OPTIONS = [1, 2, 3, 5, 10];
@@ -176,10 +161,9 @@ const NPC_POOL = [
 const ORDER_VISIBLE_COUNT = 4;
 
 // ---------- v4：订单价值与奖励（动态算法） ----------
-// 每种最基础菜品（链 Lv1）的初始价值，用于推导链内/交叉合成价值
+// 每种最基础菜品（链 Lv1）的初始价值（v2：无 milk）
 const BASE_ITEM_VALUES = {
   wheat: 1,
-  milk: 1,
   lettuce: 1,
   egg: 1
 };

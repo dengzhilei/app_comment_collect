@@ -218,7 +218,7 @@
     });
   }
 
-  var CHAIN_LABELS = { wheat: '主食', dairy: '乳制品', veggie: '蔬菜', protein: '蛋白质' };
+  var CHAIN_LABELS = { wheat: '主食', veggie: '蔬菜', protein: '蛋白质' };
 
   /** 根据物品 id 得到所属链的 key（如 flour → wheat） */
   function getChainKeyByItemId(itemId) {
@@ -238,7 +238,7 @@
     var container = document.getElementById('craft-desk');
     if (!container) return;
     container.innerHTML = '';
-    var chainKeys = TILE_TYPES || ['wheat', 'dairy', 'veggie', 'protein'];
+    var chainKeys = TILE_TYPES || ['wheat', 'veggie', 'protein'];
     chainKeys.forEach(function(chainKey) {
       var section = document.createElement('div');
       section.className = 'craft-desk-section-row';
@@ -281,26 +281,28 @@
       section.appendChild(row);
       container.appendChild(section);
     });
-    var crossSection = document.createElement('div');
-    crossSection.className = 'craft-desk-section-row';
-    var crossLabel = document.createElement('div');
-    crossLabel.className = 'craft-desk-label';
-    crossLabel.textContent = '[合成品]';
-    crossSection.appendChild(crossLabel);
-    var crossRow = document.createElement('div');
-    crossRow.className = 'craft-desk-row';
-    (CROSS_RECIPES || []).forEach(function(rec) {
-      var cell = document.createElement('button');
-      cell.type = 'button';
-      cell.className = 'craft-desk-cell';
-      var unlocked = isCrossRecipeUnlocked(rec);
-      var count = getInv(rec.id);
-      cell.innerHTML = '<span class="cell-icon">' + (unlocked ? rec.emoji : '?') + '</span><span class="cell-name">' + (unlocked ? rec.name : '???') + '</span><span class="cell-count">×' + count + '</span>';
-      cell.onclick = function() { openCraftDetail(rec); };
-      crossRow.appendChild(cell);
-    });
-    crossSection.appendChild(crossRow);
-    container.appendChild(crossSection);
+    var unlockedCross = (CROSS_RECIPES || []).filter(function(rec) { return isCrossRecipeUnlocked(rec); });
+    if (unlockedCross.length > 0) {
+      var crossSection = document.createElement('div');
+      crossSection.className = 'craft-desk-section-row';
+      var crossLabel = document.createElement('div');
+      crossLabel.className = 'craft-desk-label';
+      crossLabel.textContent = '[合成品]';
+      crossSection.appendChild(crossLabel);
+      var crossRow = document.createElement('div');
+      crossRow.className = 'craft-desk-row';
+      unlockedCross.forEach(function(rec) {
+        var cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'craft-desk-cell';
+        var count = getInv(rec.id);
+        cell.innerHTML = '<span class="cell-icon">' + rec.emoji + '</span><span class="cell-name">' + rec.name + '</span><span class="cell-count">×' + count + '</span>';
+        cell.onclick = function() { openCraftDetail(rec); };
+        crossRow.appendChild(cell);
+      });
+      crossSection.appendChild(crossRow);
+      container.appendChild(crossSection);
+    }
   }
 
   /** 打开链内合成弹窗：显示该物品所属的完整合成链（所有可合成等级及其配方与按钮） */

@@ -10,8 +10,6 @@
     });
 
     document.getElementById('btn-roll').addEventListener('click', rollDice);
-    document.getElementById('btn-inventory').addEventListener('click', openInventory);
-    document.getElementById('btn-close-inventory').addEventListener('click', closeInventory);
     document.getElementById('btn-close-recipe-detail').addEventListener('click', closeRecipeDetail);
     var btnCloseChainCraft = document.getElementById('btn-close-chain-craft');
     if (btnCloseChainCraft && typeof closeChainCraftModal === 'function') btnCloseChainCraft.addEventListener('click', closeChainCraftModal);

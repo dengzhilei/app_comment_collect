@@ -1,61 +1,7 @@
 /**
- * Board & Cooking - 背包与配方详情弹窗（依赖 config.js, state.js, items.js, board.js）
+ * Board & Cooking - 配方详情弹窗（依赖 config.js, state.js, items.js, board.js）
  */
 (function(global) {
-
-  function openInventory() {
-    var list = document.getElementById('inventory-list');
-    list.innerHTML = '';
-    var chainKeys = ['wheat', 'dairy', 'veggie', 'protein'];
-    var chainLabels = { wheat: '主食', dairy: '乳制品', veggie: '蔬菜', protein: '蛋白质' };
-    chainKeys.forEach(function(chainKey) {
-      var chain = CHAINS[chainKey];
-      var itemsWithCount = chain.filter(function(item) { return getInv(item.id) > 0; });
-      if (itemsWithCount.length === 0) return;
-      var section = document.createElement('div');
-      section.className = 'inv-chain-row';
-      var label = document.createElement('div');
-      label.className = 'inv-chain-label';
-      label.textContent = chainLabels[chainKey] || chainKey;
-      section.appendChild(label);
-      var wrap = document.createElement('div');
-      wrap.className = 'inv-chain-items';
-      itemsWithCount.forEach(function(item) {
-        var count = getInv(item.id);
-        var div = document.createElement('div');
-        div.className = 'inv-item';
-        div.innerHTML = '<span>' + item.emoji + '</span><span>' + item.name + '</span><span class="count">×' + count + '</span>';
-        wrap.appendChild(div);
-      });
-      section.appendChild(wrap);
-      list.appendChild(section);
-    });
-    var crossWithCount = CROSS_RECIPES.filter(function(rec) { return getInv(rec.id) > 0; });
-    if (crossWithCount.length > 0) {
-      var section = document.createElement('div');
-      section.className = 'inv-chain-row inv-cross-row';
-      var label = document.createElement('div');
-      label.className = 'inv-chain-label';
-      label.textContent = '合成物品';
-      section.appendChild(label);
-      var wrap = document.createElement('div');
-      wrap.className = 'inv-chain-items';
-      crossWithCount.forEach(function(rec) {
-        var count = getInv(rec.id);
-        var div = document.createElement('div');
-        div.className = 'inv-item inv-item-cross';
-        div.innerHTML = '<span>' + rec.emoji + '</span><span>' + rec.name + '</span><span class="count">×' + count + '</span>';
-        wrap.appendChild(div);
-      });
-      section.appendChild(wrap);
-      list.appendChild(section);
-    }
-    document.getElementById('modal-inventory').classList.remove('hidden');
-  }
-
-  function closeInventory() {
-    document.getElementById('modal-inventory').classList.add('hidden');
-  }
 
   function openRecipeDetail(itemId) {
     state.recipeDetailStack = [itemId];
@@ -147,8 +93,6 @@
     }
   }
 
-  global.openInventory = openInventory;
-  global.closeInventory = closeInventory;
   global.openRecipeDetail = openRecipeDetail;
   global.closeRecipeDetail = closeRecipeDetail;
   global.renderRecipeDetail = renderRecipeDetail;
