@@ -211,6 +211,7 @@ def generate_simple_text(df: pd.DataFrame, game_name: str = "游戏") -> str:
 ---
 
 精选评论列表：
+（来源：该条从哪个/哪些国家商店接口抓取；同语区多国接口常返回相同数据，标“多地区”表示无法区分评论者真实国家）
 
 """
     
@@ -245,8 +246,17 @@ def generate_simple_text(df: pd.DataFrame, game_name: str = "游戏") -> str:
                     detail_parts.append(f"{key}: {value}")
         
         detail_str = f" | {', '.join(detail_parts)}" if detail_parts else ""
+        # 多国接口返回同一条时只表示“从哪些商店抓到的”，无法区分评论者真实国家
+        country_names = row.get('country_names')
+        if isinstance(country_names, list) and len(country_names) > 1:
+            country = f"多地区({'、'.join(str(c) for c in country_names)})"
+        elif isinstance(country_names, list) and country_names:
+            country = country_names[0]
+        else:
+            country = row.get('country_name') or row.get('country', '')
+        country_str = f" | 来源: {country}" if country else ""
         
-        text += f"\n[评论 {idx}] 评分: {rating}/5 | 综合分: {score}{detail_str} | 日期: {date}\n"
+        text += f"\n[评论 {idx}] 评分: {rating}/5 | 综合分: {score}{detail_str} | 日期: {date}{country_str}\n"
         text += f"{content}\n"
         text += "-" * 80 + "\n"
     

@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableDelayedExpansion
 chcp 65001 >nul
 echo ========================================
 echo 安装Python依赖
@@ -28,11 +29,10 @@ echo.
 REM 检查Python版本是否 >= 3.8
 echo %PYTHON_VERSION% | findstr /R "^3\.[8-9]\|^3\.1[0-9]\|^[4-9]\." >nul
 if %errorlevel% neq 0 (
-    echo 警告: 建议使用Python 3.8或更高版本
-    echo 当前版本可能不兼容某些依赖包
+    echo 警告: 建议使用 Python 3.8 或更高版本，当前版本可能无法兼容部分依赖
     echo.
     set /p CONTINUE="是否继续安装? (Y/N): "
-    if /i not "%CONTINUE%"=="Y" exit /b 1
+    if /i not "!CONTINUE!"=="Y" exit /b 1
 )
 
 echo.
@@ -49,6 +49,12 @@ echo 这可能需要几分钟，请耐心等待...
 echo.
 
 %PYTHON_CMD% -m pip install -r requirements.txt
+if errorlevel 1 (
+    echo.
+    echo 安装过程中出现错误，请检查上方输出
+    pause
+    exit /b 1
+)
 
 echo.
 echo ========================================
@@ -56,8 +62,8 @@ echo 安装完成！
 echo ========================================
 echo.
 echo 现在可以开始使用了：
-echo   运行采集: 运行采集.bat "游戏名称"
-echo   运行筛选: 运行筛选.bat "游戏名称"
+echo   运行采集和筛选: 运行采集和筛选.bat
+echo   运行翻译评论: 运行翻译评论.bat
 echo.
 pause
 

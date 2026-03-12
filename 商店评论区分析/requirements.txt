@@ -11,7 +11,3 @@ requests>=2.31.0
 
 # AI翻译
 openai>=1.0.0
-
-# 其他
-tqdm>=4.65.0
-python-dateutil>=2.8.2

@@ -93,10 +93,13 @@ def main():
     logger.info(f"App ID: {app_id}")
     logger.info(f"时间范围: {start_date.strftime('%Y-%m-%d')} 至 {end_date.strftime('%Y-%m-%d')}")
     
-    # 获取地区配置
+    # 获取多地区配置（全球采集，每条评论会标注国家）
     scraper_config = get_scraper_config(config)
-    region = scraper_config.get('regions', [{'lang': 'en', 'country': 'us', 'name': '美国'}])[0]
-    logger.info(f"地区: {region['name']} ({region['lang']}, {region['country']})\n")
+    regions = scraper_config.get('regions', [{'lang': 'en', 'country': 'us', 'name': '美国'}])
+    logger.info(f"地区数: {len(regions)}（全球多地区）")
+    for r in regions:
+        logger.info(f"  - {r['name']} ({r['lang']}, {r['country']})")
+    logger.info("")
     
     # 创建采集器
     scraper = PlayStoreScraper(
@@ -104,9 +107,10 @@ def main():
         retry_times=scraper_config['retry_times']
     )
     
-    # 先验证应用信息
+    # 用第一个地区验证应用信息
+    first_region = regions[0]
     logger.info("正在验证应用信息...")
-    app_info = scraper.get_app_info(app_id, lang=region['lang'], country=region['country'])
+    app_info = scraper.get_app_info(app_id, lang=first_region['lang'], country=first_region['country'])
     
     if app_info:
         logger.info(f"✓ 应用信息获取成功！")
@@ -117,42 +121,64 @@ def main():
     else:
         logger.warning("⚠ 无法获取应用信息，但继续尝试采集评论...\n")
     
-    # 开始采集
-    logger.info("开始采集评论...")
-    reviews = scraper.get_reviews(
-        app_id=app_id,
-        app_name=game_name,
-        days=365,  # 这个参数会被 start_date 和 end_date 覆盖
-        max_reviews=scraper_config['max_reviews_per_game'],
-        lang=region['lang'],
-        country=region['country'],
-        start_date=start_date,
-        end_date=end_date
-    )
+    # 按地区循环采集，合并并标注国家（同一条评论在多个国家出现时，记录所有来源国家）
+    reviews_by_id = {}  # review_id -> review，同一条会合并 country_names 列表
+    max_per_region = scraper_config.get('max_reviews_per_game', 5000)
+    
+    for i, region in enumerate(regions, 1):
+        logger.info(f"[{i}/{len(regions)}] 正在采集地区: {region['name']} ({region['country']})")
+        region_reviews = scraper.get_reviews(
+            app_id=app_id,
+            app_name=game_name,
+            days=365,
+            max_reviews=max_per_region,
+            lang=region['lang'],
+            country=region['country'],
+            start_date=start_date,
+            end_date=end_date
+        )
+        for r in region_reviews:
+            r['country_name'] = region['name']
+            r['country_names'] = [region['name']]
+        # 去重：同一 review_id 在不同国家接口返回的是同一条评论，只保留一条
+        # 同语区（美/英/加等）接口返回的数据相同，无法区分评论者真实国家，只记录“从哪些国家接口抓到了这条”
+        new_count = 0
+        for r in region_reviews:
+            rid = r.get('review_id')
+            if not rid:
+                continue
+            if rid not in reviews_by_id:
+                reviews_by_id[rid] = r
+                new_count += 1
+            else:
+                existing = reviews_by_id[rid]
+                for cn in r.get('country_names', [r.get('country_name')]):
+                    if cn and cn not in existing.get('country_names', []):
+                        existing.setdefault('country_names', []).append(cn)
+        logger.info(f"  本地区新增 {new_count} 条（去重后总累计: {len(reviews_by_id)} 条）\n")
+    
+    reviews = list(reviews_by_id.values())
     
     if not reviews:
         logger.error("没有采集到任何数据！")
         return
     
-    logger.info(f"\n✓ 采集成功！共获取 {len(reviews)} 条评论")
+    logger.info(f"\n✓ 全球采集完成！共获取 {len(reviews)} 条评论（已按 review_id 去重）")
     
     # 保存数据（处理游戏名称中的特殊字符）
     game_name_safe = game_name.replace(' ', '_').replace(':', '_').replace('&', '_')
     
-    # 生成文件名
+    # 生成文件名（全球统一一个文件）
     if start_date.year == end_date.year and start_date.month == end_date.month:
-        # 同一个月
         date_str = start_date.strftime('%Y%m')
     else:
-        # 跨月或跨年
         date_str = f"{start_date.strftime('%Y%m')}-{end_date.strftime('%Y%m')}"
     
-    # 检查是否有特殊时间范围标记（如 early）
     filename_suffix = ""
     if "early" in sys.argv or (start_date.year == 2024 and start_date.month == 1 and end_date.month == 11):
         filename_suffix = "_early"
     
-    output_path = f"data/raw/{game_name_safe}_android_{region['name']}{filename_suffix}_{date_str}.json"
+    output_path = f"data/raw/{game_name_safe}_android_全球{filename_suffix}_{date_str}.json"
     scraper.save_reviews(reviews, output_path)
     
     # 统计信息

@@ -12,11 +12,6 @@ from typing import List, Dict, Optional
 from pathlib import Path
 
 try:
-    from tqdm import tqdm
-except ImportError:
-    tqdm = None
-
-try:
     from google_play_scraper import app, reviews, Sort, search
 except ImportError:
     try:

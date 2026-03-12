@@ -266,23 +266,21 @@ def search_and_select_game(query=None):
                 print(f"  应用ID: {selected['appId']}")
                 print()
                 
-                # 检查是否已存在于配置中
+                # 检查是否已存在于配置中：若存在则用 config 里的游戏名，保证采集/筛选文件名一致
                 config = load_config()
                 games = get_games_list(config)
-                exists = False
                 for game in games:
-                    if game.get('name') == selected['title'] or game.get('playstore_id') == selected['appId']:
-                        exists = True
+                    if game.get('playstore_id') == selected['appId'] or game.get('name') == selected['title']:
                         print(f"✓ 此游戏已存在于配置文件中")
-                        break
+                        # 统一用 config 名称，避免 Play 标题与 config 不一致导致筛选找不到文件
+                        return game.get('name', selected['title'])
                 
                 # 如果不存在，询问是否要添加到配置文件
-                if not exists:
-                    add_to_config = input("是否要将此游戏添加到配置文件? (y/n, 默认y): ").strip().lower()
-                    if add_to_config != 'n':
-                        add_game_to_config(selected['title'], selected['appId'])
-                    else:
-                        print("注意: 游戏未添加到配置文件，后续采集可能无法正常工作")
+                add_to_config = input("是否要将此游戏添加到配置文件? (y/n, 默认y): ").strip().lower()
+                if add_to_config != 'n':
+                    add_game_to_config(selected['title'], selected['appId'])
+                else:
+                    print("注意: 游戏未添加到配置文件，后续采集可能无法正常工作")
                 
                 return selected['title']
             else:

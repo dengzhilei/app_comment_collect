@@ -2,7 +2,7 @@
 import os
 
 # 配置
-AVATAR_DIR = os.path.join(os.path.dirname(__file__), "farm_avatars")
+AVATAR_DIR = os.path.join(os.path.dirname(__file__), "filter")
 PREFIX = "avatar_"  # 前缀
 START_NUM = 1       # 起始编号
 

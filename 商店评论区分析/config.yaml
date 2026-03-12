@@ -3,7 +3,7 @@ games:
   playstore_id: com.solitairetripeaks.masterdesign
   platforms:
   - android
-- name: TopTycoon
+- name: Top Tycoon
   playstore_id: com.monopoly.dream.idle.king
   platforms:
   - android
@@ -79,12 +79,47 @@ games:
   playstore_id: com.bingo.cruise.free.best.top.game
   platforms:
   - android
+- name: Coin Master - Board Adventure
+  playstore_id: com.moonactive.cmboard
+  platforms:
+  - android
 scraper:
   time_range_days: 365
-  max_reviews_per_game: 5000
+  max_reviews_per_game: 5000   # 每个地区最多采集条数，多地区时总条数 = 地区数 × 此值（去重后可能更少）
   delay_between_requests: 2
   retry_times: 3
+  # 全球多地区：只保留“有差异”的地区。英/加/澳/印与美国评论高度重复，故只保留美国代表英语区，其余为不同语言/市场
   regions:
   - name: 美国
     lang: en
     country: us
+  - name: 德国
+    lang: de
+    country: de
+  - name: 法国
+    lang: fr
+    country: fr
+  - name: 日本
+    lang: ja
+    country: jp
+  - name: 韩国
+    lang: ko
+    country: kr
+  - name: 巴西
+    lang: pt
+    country: br
+  - name: 墨西哥
+    lang: es
+    country: mx
+  - name: 西班牙
+    lang: es
+    country: es
+  - name: 意大利
+    lang: it
+    country: it
+  - name: 印尼
+    lang: id
+    country: id
+  - name: 泰国
+    lang: th
+    country: th
