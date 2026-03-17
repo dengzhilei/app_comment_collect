@@ -61,4 +61,10 @@ filter.log
 .DS_Store
 Thumbs.db
 
+# 以 ~ 开头的临时文件（如 Office 的 ~$xxx.xlsx / ~$xxx.docx）
+~*
+
 pull_icon/farm_avatars
+
+# 环境变量配置
+.env

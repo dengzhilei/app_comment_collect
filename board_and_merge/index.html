@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Board & Merge</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app" class="vertical-app">
+    <header class="top-bar">
+      <div class="top-resources">
+        <div class="dice-count">
+          <span class="icon">&#127922;</span>
+          <span id="dice-num">20</span>
+        </div>
+        <div class="energy-count">
+          <span class="icon">&#9889;</span>
+          <span id="energy-num">10</span>
+        </div>
+        <div class="chef-level" id="chef-level-wrap" title="Chef level">
+          <span class="icon">&#127859;</span>
+          <span id="chef-level-num">Lv.1</span>
+        </div>
+      </div>
+      <nav class="tabs">
+        <button type="button" class="tab active" data-tab="board">Board</button>
+        <button type="button" class="tab" data-tab="merge">Merge & Orders</button>
+        <button type="button" class="tab" data-tab="gm">GM</button>
+      </nav>
+    </header>
+
+    <section id="panel-board" class="panel active">
+      <div id="board-gain" class="board-gain"><span class="board-gain-placeholder">—</span></div>
+      <div class="board-wrap">
+        <div class="board-inner" id="board-inner">
+          <div id="board" class="board"></div>
+          <div id="player-token" class="player-token">&#128059;</div>
+        </div>
+        <div id="board-dice-result" class="board-dice-result hidden">
+          <span class="board-dice-label">Roll</span>
+          <span id="board-dice-value" class="board-dice-value">0</span>
+        </div>
+      </div>
+      <div class="board-actions">
+        <div class="bet-row">
+          <span>Bet</span>
+          <button type="button" id="bet-cycle-btn" class="btn-bet-cycle">×1</button>
+        </div>
+        <button type="button" id="btn-roll" class="btn-roll">Roll dice</button>
+      </div>
+    </section>
+
+    <section id="panel-merge" class="panel panel-merge-orders">
+      <div class="order-section">
+        <h4 class="order-section-title">订单</h4>
+        <div id="order-list" class="order-list"></div>
+      </div>
+      <div class="merge-section">
+        <h4 class="merge-section-title">生成器（消耗能量）</h4>
+        <div id="merge-generators" class="merge-generators"></div>
+        <h4 class="merge-section-title">合成区（可拖拽移动；拖到相同物品上合并）</h4>
+        <div id="merge-grid" class="merge-grid"></div>
+      </div>
+    </section>
+
+    <section id="panel-gm" class="panel panel-gm">
+      <div class="gm-section">
+        <h4 class="gm-section-title">Dice</h4>
+        <div class="gm-row-wrap">
+          <button type="button" id="btn-gm-dice" class="gm-btn">+20 Dice</button>
+          <button type="button" id="btn-gm-unstick" class="gm-btn">Unstick roll</button>
+          <label class="gm-row">
+            <span>Next roll</span>
+            <input type="number" id="gm-next-roll" min="2" max="12" value="7" class="gm-input">
+            <button type="button" id="btn-gm-set-roll" class="gm-btn">Set</button>
+          </label>
+        </div>
+      </div>
+      <div class="gm-section">
+        <h4 class="gm-section-title">Energy</h4>
+        <div class="gm-row-wrap">
+          <button type="button" id="btn-gm-energy" class="gm-btn">+50 Energy</button>
+        </div>
+      </div>
+      <div class="gm-section">
+        <h4 class="gm-section-title">Exp</h4>
+        <div class="gm-row-wrap">
+          <input type="number" id="gm-exp" min="0" value="50" class="gm-input gm-input-num">
+          <button type="button" id="btn-gm-add-exp" class="gm-btn">Add Exp</button>
+        </div>
+      </div>
+      <div class="gm-section">
+        <h4 class="gm-section-title">Add item to grid</h4>
+        <div class="gm-row-wrap gm-add-item-row">
+          <select id="gm-item-select" class="gm-select"></select>
+          <button type="button" id="btn-gm-add-item" class="gm-btn">Add</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <div id="modal-chain" class="modal hidden">
+      <div class="modal-content modal-chain-content">
+        <h3 class="modal-chain-title" id="modal-chain-title">合成链</h3>
+        <div class="modal-chain-strip" id="modal-chain-strip"></div>
+        <button type="button" class="btn-close" id="btn-close-chain">关闭</button>
+      </div>
+    </div>
+  </div>
+  <script src="config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/items.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/merge.js"></script>
+  <script src="js/orders.js"></script>
+  <script src="js/game.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

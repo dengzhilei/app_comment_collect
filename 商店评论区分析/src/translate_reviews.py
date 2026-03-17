@@ -11,9 +11,12 @@ import asyncio
 from pathlib import Path
 from openai import AsyncOpenAI
 from typing import List, Tuple
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # API配置
-DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY') or 'sk-fa41a7bf6cd84d69a6903c7dd9b329ae'
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
 
 # 翻译配置
 MAX_TOKENS_PER_REQUEST = 25000  # 每次请求的最大token数（保守估计，留出安全余量）
