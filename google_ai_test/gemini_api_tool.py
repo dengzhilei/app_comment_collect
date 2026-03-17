@@ -45,6 +45,10 @@ def upload_to_gemini(client, file_path):
             os.remove(temp_path)
 
 def main():
+    # 强制将终端输出设置为 utf-8，防止 Windows 终端不支持 emoji 而报错
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
     api_key = os.environ.get("GEMINI_API_KEY")
     try:
         client = genai.Client(api_key=api_key)
@@ -108,9 +112,13 @@ def main():
             # 组合包含的所有附件以及当前的提示词
             contents = uploaded_files + [prompt]
             
+            from google.genai import types
             response = client.models.generate_content_stream(
                 model=model_id,
                 contents=contents,
+                config=types.GenerateContentConfig(
+                    tools=[{"google_search": {}}]
+                )
             )
             
             for chunk in response:
