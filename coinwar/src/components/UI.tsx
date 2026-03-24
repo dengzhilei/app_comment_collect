@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useGameStore, TurnMode, CameraMode } from '../store';
+import { useGameStore, WIN_TARGET, TurnMode, CameraMode } from '../store';
 import { Trophy, Coins, AlertCircle, Play, Settings, Home, Camera } from 'lucide-react';
 
 export function UI() {
@@ -21,7 +21,6 @@ export function UI() {
   const [stealPercentage, setStealPercentage] = useState(50);
   const [turnMode, setTurnMode] = useState<TurnMode>('turn-based');
   const [aiDelay, setAiDelay] = useState(false);
-  const [winTarget, setWinTarget] = useState(200);
 
   const humanPlayer = players.find(p => !p.isAI);
   const humanPlayerIndex = players.findIndex(p => !p.isAI);
@@ -45,7 +44,7 @@ export function UI() {
         <div className="text-center p-8 bg-gray-900 rounded-2xl shadow-2xl border border-gray-700 max-w-2xl w-full mx-4">
           <h1 className="text-4xl font-bold mb-6 text-yellow-400">Coin Runner 3D</h1>
           <p className="mb-6 text-gray-300">
-            Roll the dice, collect coins, and deposit them at the BANK. First to {winTarget} coins wins! Watch out for traps and other players!
+            Roll the dice, collect coins, and deposit them at the BANK. First to {WIN_TARGET} coins wins! Watch out for traps and other players!
           </p>
 
           <div className="bg-gray-800 p-6 rounded-xl mb-8 text-left border border-gray-700">
@@ -112,19 +111,6 @@ export function UI() {
                 </div>
               </div>
               <div>
-                <label className="flex justify-between text-sm font-medium text-gray-300 mb-2">
-                  <span>Win Target (Coins)</span>
-                  <span className="text-yellow-400">{winTarget}</span>
-                </label>
-                <input 
-                  type="range" 
-                  min="50" max="1000" step="50"
-                  value={winTarget} 
-                  onChange={(e) => setWinTarget(Number(e.target.value))}
-                  className="w-full accent-blue-500"
-                />
-              </div>
-              <div>
                 <label className="flex items-center gap-3 text-sm font-medium text-gray-300 cursor-pointer">
                   <input 
                     type="checkbox" 
@@ -140,14 +126,14 @@ export function UI() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
-              onClick={() => initGame('classic', { trapDropPercentage, stealPercentage, turnMode, aiDelay, winTarget })}
+              onClick={() => initGame('classic', { trapDropPercentage, stealPercentage, turnMode, aiDelay })}
               className="px-6 py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-blue-500/50 flex flex-col items-center gap-2 flex-1"
             >
               <span className="flex items-center gap-2"><Play size={20} /> Classic Mode</span>
               <span className="text-sm font-normal text-blue-200">Pass START to bank</span>
             </button>
             <button 
-              onClick={() => initGame('strict_bank', { trapDropPercentage, stealPercentage, turnMode, aiDelay, winTarget })}
+              onClick={() => initGame('strict_bank', { trapDropPercentage, stealPercentage, turnMode, aiDelay })}
               className="px-6 py-4 bg-purple-600 hover:bg-purple-500 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-purple-500/50 flex flex-col items-center gap-2 flex-1"
             >
               <span className="flex items-center gap-2"><Play size={20} /> Strict Bank Mode</span>
@@ -258,7 +244,7 @@ export function UI() {
                 {isCurrentTurn && <span className="text-[10px] bg-white text-black px-1.5 py-0.5 rounded-full">TURN</span>}
               </span>
               <span className="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400">
-                {p.bankedCoins} / {settings?.winTarget || 200}
+                {p.bankedCoins} / {WIN_TARGET}
               </span>
             </div>
             
@@ -266,7 +252,7 @@ export function UI() {
             <div className="w-full bg-gray-800 rounded-full h-2 mb-3">
               <div 
                 className="h-2 rounded-full transition-all duration-500" 
-                style={{ width: `${Math.min(100, (p.bankedCoins / (settings?.winTarget || 200)) * 100)}%`, backgroundColor: p.color }}
+                style={{ width: `${Math.min(100, (p.bankedCoins / WIN_TARGET) * 100)}%`, backgroundColor: p.color }}
               />
             </div>
 

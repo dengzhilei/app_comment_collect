@@ -41,6 +41,10 @@ function CameraController() {
   const prevTurnIndexRef = useRef(useGameStore.getState().currentPlayerIndex);
   const turnJustSwitchedRef = useRef(false);
 
+  // 记录 AI 回合的静态镜头目标
+  const aiStaticCamPosRef = useRef<number | null>(null);
+  const prevDiceResultRef = useRef<[number, number] | null>(null);
+
   // 在渲染阶段检测回合切换
   const currentTurnIndex = useGameStore(state => state.currentPlayerIndex);
   if (prevTurnIndexRef.current !== currentTurnIndex) {
@@ -73,9 +77,7 @@ function CameraController() {
     if (!targetPlayer) return;
 
     // 如果游戏重置（位置、金币、步数都归零），则瞬间将视觉位置归零
-    // 只有当所有玩家都在起点时，才认为是游戏重置
-    const isGameReset = players.every(p => p.position === 0 && p.bankedCoins === 0 && p.carriedCoins === 0 && p.stepsRemaining === 0);
-    if (isGameReset) {
+    if (targetPlayer.position === 0 && targetPlayer.bankedCoins === 0 && targetPlayer.carriedCoins === 0 && targetPlayer.stepsRemaining === 0) {
       if (visualPosRef.current !== 0) {
         visualPosRef.current = 0;
         logicalTargetPosRef.current = 0;
@@ -90,23 +92,81 @@ function CameraController() {
     if (turnMode === 'turn-based') {
       const currentPlayerIndex = useGameStore.getState().currentPlayerIndex;
       const currentPlayer = players[currentPlayerIndex];
+      const isHumanTurn = currentPlayer?.id === humanPlayer?.id;
 
-      if (currentPlayer) {
-        // 统一逻辑：跟随当前玩家（带小死区，保持平滑）
-        let diffToPlayer = getDiff(logicalTargetPosRef.current, currentPlayer.position);
-        const DEADZONE = 2; // 移动时的死区
+      // 检查骰子结果是否发生变化（刚刚掷骰子）
+      const justRolled = currentPlayer && currentPlayer.diceResult !== null && prevDiceResultRef.current === null;
+      prevDiceResultRef.current = currentPlayer?.diceResult || null;
+
+      // 如果回合切换，清除静态镜头记录
+      if (turnJustSwitchedRef.current) {
+        aiStaticCamPosRef.current = null;
+      }
+
+      if (isHumanTurn && humanPlayer) {
+        // 1. 人类回合：跟随人类（带小死区，保持平滑）
+        let diffToHuman = getDiff(logicalTargetPosRef.current, humanPlayer.position);
+        const DEADZONE = 2; // 人类移动时的死区
         
-        // 如果回合刚刚切换，且玩家不在死区内，则强切（跳变）
-        if (turnJustSwitchedRef.current && Math.abs(diffToPlayer) > DEADZONE) {
+        // 如果回合刚刚切换到人类，且人类不在死区内，则强切（跳变）
+        if (turnJustSwitchedRef.current && Math.abs(diffToHuman) > DEADZONE) {
           shouldHardCut = true;
-          targetCamPos = currentPlayer.position;
+          targetCamPos = humanPlayer.position;
           useGameStore.getState().setPauseUntil(Date.now() + 500);
         } else {
-          if (diffToPlayer > DEADZONE) {
-            targetCamPos = logicalTargetPosRef.current + (diffToPlayer - DEADZONE);
-          } else if (diffToPlayer < -DEADZONE) {
-            targetCamPos = logicalTargetPosRef.current + (diffToPlayer + DEADZONE);
+          if (diffToHuman > DEADZONE) {
+            targetCamPos = logicalTargetPosRef.current + (diffToHuman - DEADZONE);
+          } else if (diffToHuman < -DEADZONE) {
+            targetCamPos = logicalTargetPosRef.current + (diffToHuman + DEADZONE);
           }
+        }
+      } else if (currentPlayer) {
+        // 2. AI 回合：计算静态最佳镜头位置，过程不平移
+        const pendingDice = currentPlayer.diceResult || currentPlayer.nextDiceResult;
+        
+        // 只有在刚刚掷骰子时，或者还没有计算过时，才计算静态位置
+        if (aiStaticCamPosRef.current === null && pendingDice !== null) {
+          const startPos = currentPlayer.position;
+          const steps = pendingDice[0] + pendingDice[1];
+          const endPos = (startPos + steps) % BOARD_SIZE;
+          
+          // 检查当前镜头是否能同时看到起点和终点
+          const canSeeMove = getDist(logicalTargetPosRef.current, startPos) <= VIEW_RADIUS && 
+                             getDist(logicalTargetPosRef.current, endPos) <= VIEW_RADIUS;
+          
+          if (canSeeMove) {
+            // 情况1：完全不用动
+            aiStaticCamPosRef.current = logicalTargetPosRef.current;
+          } else {
+            // 情况2&3：必须切，找一个最合适的地方
+            shouldHardCut = true;
+            useGameStore.getState().setPauseUntil(Date.now() + 500);
+            const midPos = getMidpoint(startPos, endPos);
+            
+            const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            const isHumanNext = players[nextPlayerIndex]?.id === humanPlayer?.id;
+
+            if (isHumanNext && humanPlayer) {
+              // 优先考虑人类位置：在保证能看到 AI 完整移动的前提下，尽量靠近人类，省去下一次切换
+              const maxDev = Math.max(0, VIEW_RADIUS - steps / 2); // 镜头最多能偏离中点的距离
+              const diffHumanMid = getDiff(midPos, humanPlayer.position);
+              
+              // 将镜头向人类方向偏移，但不能超过 maxDev
+              const shift = Math.sign(diffHumanMid) * Math.min(Math.abs(diffHumanMid), maxDev);
+              aiStaticCamPosRef.current = (midPos + shift + BOARD_SIZE) % BOARD_SIZE;
+            } else {
+              // 下一个不是人类，直接居中显示 AI 的移动
+              aiStaticCamPosRef.current = midPos;
+            }
+          }
+        }
+
+        // 如果还没有掷骰子（等待中），或者已经计算好静态位置，保持镜头不动
+        if (aiStaticCamPosRef.current !== null) {
+          targetCamPos = aiStaticCamPosRef.current;
+        } else {
+          // 还没掷骰子，而且之前也没记录过，就保持当前位置
+          targetCamPos = logicalTargetPosRef.current;
         }
       }
     } else {

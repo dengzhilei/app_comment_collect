@@ -1,10 +1,9 @@
 import React from 'react';
-import { useGameStore } from '../store';
+import { useGameStore, WIN_TARGET } from '../store';
 import { Text } from '@react-three/drei';
 
 export function CenterLandmark() {
   const players = useGameStore(state => state.players);
-  const winTarget = useGameStore(state => state.settings?.winTarget || 200);
 
   return (
     <group position={[0, 0, 0]}>
@@ -21,7 +20,7 @@ export function CenterLandmark() {
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         
-        const progress = Math.min(p.bankedCoins / winTarget, 1);
+        const progress = Math.min(p.bankedCoins / WIN_TARGET, 1);
         const maxHeight = 4;
         const currentHeight = Math.max(progress * maxHeight, 0.1);
 

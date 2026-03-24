@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 
+export const WIN_TARGET = 300;
 export const BOARD_SIZE = 40;
 export const GRID_SIZE = 11;
 export const HALF_GRID = Math.floor(GRID_SIZE / 2); // 5
@@ -30,7 +31,6 @@ export type GameSettings = {
   stealPercentage: number;
   turnMode: TurnMode;
   aiDelay: boolean;
-  winTarget: number;
 };
 
 export type Player = {
@@ -135,8 +135,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     trapDropPercentage: 50,
     stealPercentage: 50,
     turnMode: 'turn-based',
-    aiDelay: false,
-    winTarget: 200
+    aiDelay: false
   },
   currentPlayerIndex: 0,
   autoSpin: false,
@@ -430,7 +429,7 @@ export const useGameStore = create<GameState>((set, get) => ({
             newCarried = 0;
             newMessage = `Banked!`;
             newMessageTimeout = now + 2000;
-            if (newBanked >= state.settings.winTarget) {
+            if (newBanked >= WIN_TARGET) {
               newWinner = p.id;
             }
           }
@@ -487,7 +486,7 @@ export const useGameStore = create<GameState>((set, get) => ({
               newCarried = 0;
               newMessage = `Banked!`;
               newMessageTimeout = now + 2000;
-              if (newBanked >= state.settings.winTarget) {
+              if (newBanked >= WIN_TARGET) {
                 newWinner = p.id;
               }
             }
