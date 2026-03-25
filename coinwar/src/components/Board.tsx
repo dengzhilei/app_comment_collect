@@ -1,22 +1,24 @@
 import React from 'react';
-import { useGameStore, BOARD_SIZE, HALF_GRID, TileType, getTilePosition } from '../store';
+import { useGameStore, TileType, getTilePosition } from '../store';
 import { Box, Text, Billboard } from '@react-three/drei';
 
 const TILE_COLORS: Record<TileType, string> = {
-  bank: '#fcd34d', // yellow-300
-  normal: '#e5e7eb', // gray-200
-  bonus: '#6ee7b7', // emerald-300
+  bank: '#fcd34d',
+  normal: '#e5e7eb',
+  bonus_10: '#6ee7b7',
+  bonus_x2: '#c084fc',
 };
 
 export function Board() {
   const tiles = useGameStore(state => state.tiles);
   const traps = useGameStore(state => state.traps);
   const droppedCoins = useGameStore(state => state.droppedCoins);
+  const boardSize = useGameStore(state => state.settings.boardSize);
 
   return (
     <group>
       {tiles.map((type, index) => {
-        const pos = getTilePosition(index);
+        const pos = getTilePosition(index, boardSize);
         return (
           <group key={`tile-${index}`} position={pos}>
             <Box args={[0.9, 0.2, 0.9]} position={[0, -0.1, 0]}>
@@ -29,10 +31,17 @@ export function Board() {
                 </Text>
               </Billboard>
             )}
-            {type === 'bonus' && (
+            {type === 'bonus_10' && (
               <Billboard position={[0, 0.4, 0]}>
                 <Text fontSize={0.25} color="#6ee7b7" outlineWidth={0.02} outlineColor="#000" fontWeight="bold">
-                  BONUS
+                  +10
+                </Text>
+              </Billboard>
+            )}
+            {type === 'bonus_x2' && (
+              <Billboard position={[0, 0.4, 0]}>
+                <Text fontSize={0.25} color="#c084fc" outlineWidth={0.02} outlineColor="#000" fontWeight="bold">
+                  +50%
                 </Text>
               </Billboard>
             )}
@@ -42,7 +51,7 @@ export function Board() {
 
       {/* Render traps */}
       {traps.map(trap => {
-        const pos = getTilePosition(trap.position);
+        const pos = getTilePosition(trap.position, boardSize);
         return (
           <Box key={trap.id} args={[0.5, 0.1, 0.5]} position={[pos[0], 0.05, pos[2]]}>
             <meshStandardMaterial color="#ef4444" />
@@ -52,7 +61,7 @@ export function Board() {
 
       {/* Render dropped coins */}
       {droppedCoins.map((coin) => {
-        const pos = getTilePosition(coin.position);
+        const pos = getTilePosition(coin.position, boardSize);
         // Use coin.id as a stable seed instead of array index to prevent shifting
         const seed = parseInt(coin.id.substring(0, 8), 16) || coin.position;
         const offsetX = Math.sin(seed * 1234.5) * 0.2;

@@ -2,18 +2,17 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text, Billboard } from '@react-three/drei';
 import * as THREE from 'three';
-import { useGameStore, BOARD_SIZE, getTilePosition } from '../store';
+import { useGameStore, getTilePosition } from '../store';
 
-// 根据一维的格子索引（允许小数），计算在 3D 空间中的实际坐标
-export function getInterpolatedPosition(vPos: number): THREE.Vector3 {
-  const index1 = Math.floor(vPos) % BOARD_SIZE;
-  const index2 = (index1 + 1) % BOARD_SIZE;
-  const t = vPos - Math.floor(vPos); // 获取小数部分作为插值比例
-  const p1 = getTilePosition(index1);
-  const p2 = getTilePosition(index2);
+export function getInterpolatedPosition(vPos: number, boardSize: number = 40): THREE.Vector3 {
+  const index1 = Math.floor(vPos) % boardSize;
+  const index2 = (index1 + 1) % boardSize;
+  const t = vPos - Math.floor(vPos);
+  const p1 = getTilePosition(index1, boardSize);
+  const p2 = getTilePosition(index2, boardSize);
   return new THREE.Vector3(
     p1[0] + (p2[0] - p1[0]) * t,
-    0, // 改为 0，修复浮空问题，使玩家底部贴合地面
+    0,
     p1[2] + (p2[2] - p1[2]) * t
   );
 }
@@ -21,27 +20,23 @@ export function getInterpolatedPosition(vPos: number): THREE.Vector3 {
 // 单个玩家的 3D 渲染组件
 export function PlayerComponent({ id }: { id: string }) {
   const player = useGameStore(state => state.players.find(p => p.id === id));
+  const boardSize = useGameStore(state => state.settings.boardSize);
+  const playerCount = useGameStore(state => state.settings.playerCount);
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
-  // 记录视觉位置（用于平滑移动，与逻辑位置区分开）
   const visualPosRef = useRef(player?.position || 0);
 
-  // useFrame 是 React Three Fiber 的每帧渲染钩子
   useFrame((state, delta) => {
     if (!player || !groupRef.current) return;
 
-    // 如果游戏重置，瞬间将视觉位置归零
     if (player.position === 0 && player.bankedCoins === 0 && player.carriedCoins === 0 && player.stepsRemaining === 0) {
       visualPosRef.current = 0;
     }
 
-    // 计算视觉位置向逻辑位置移动的差值
     let diff = player.position - visualPosRef.current;
-    // 处理环形棋盘的跨越（例如从 39 走到 0）
-    if (diff < -BOARD_SIZE / 2) diff += BOARD_SIZE;
-    if (diff > BOARD_SIZE / 2) diff -= BOARD_SIZE;
+    if (diff < -boardSize / 2) diff += boardSize;
+    if (diff > boardSize / 2) diff -= boardSize;
 
-    // 移动速度：每秒 5 个格子
     const moveSpeed = 5;
     if (Math.abs(diff) > 0.01) {
       visualPosRef.current += Math.sign(diff) * Math.min(Math.abs(diff), moveSpeed * delta);
@@ -49,21 +44,20 @@ export function PlayerComponent({ id }: { id: string }) {
       visualPosRef.current = player.position;
     }
 
-    // 确保视觉位置在合法范围内循环
-    if (visualPosRef.current >= BOARD_SIZE) visualPosRef.current -= BOARD_SIZE;
-    if (visualPosRef.current < 0) visualPosRef.current += BOARD_SIZE;
+    if (visualPosRef.current >= boardSize) visualPosRef.current -= boardSize;
+    if (visualPosRef.current < 0) visualPosRef.current += boardSize;
 
-    const pos3D = getInterpolatedPosition(visualPosRef.current);
+    const pos3D = getInterpolatedPosition(visualPosRef.current, boardSize);
     
-    // 计算玩家朝向：获取稍微靠前一点的位置，计算方向向量
-    const nextPos3D = getInterpolatedPosition((visualPosRef.current + 0.1) % BOARD_SIZE);
+    const nextPos3D = getInterpolatedPosition((visualPosRef.current + 0.1) % boardSize, boardSize);
     const dx = nextPos3D.x - pos3D.x;
     const dz = nextPos3D.z - pos3D.z;
     const angle = Math.atan2(dx, dz);
 
     // 添加视觉偏移，避免玩家重叠
     const playerIndex = useGameStore.getState().players.findIndex(p => p.id === id);
-    const offsetAmount = (playerIndex - 1) * 0.25; // 3个玩家分别偏移 -0.25, 0, 0.25
+    const center = (playerCount - 1) / 2;
+    const offsetAmount = (playerIndex - center) * 0.25;
     const offsetX = Math.cos(angle) * offsetAmount;
     const offsetZ = -Math.sin(angle) * offsetAmount;
 

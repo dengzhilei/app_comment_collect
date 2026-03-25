@@ -1,43 +1,55 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
+import { generateDice } from './diceRules';
 
-export const WIN_TARGET = 300;
 export const BOARD_SIZE = 40;
-export const GRID_SIZE = 11;
-export const HALF_GRID = Math.floor(GRID_SIZE / 2); // 5
 
-export function getTilePosition(index: number): [number, number, number] {
-  // 改为顺时针方向：反转 X 轴坐标
-  if (index <= 10) {
-    return [HALF_GRID - index, 0, HALF_GRID];
-  }
-  if (index <= 20) {
-    return [-HALF_GRID, 0, HALF_GRID - (index - 10)];
-  }
-  if (index <= 30) {
-    return [-(HALF_GRID - (index - 20)), 0, -HALF_GRID];
-  }
-  return [HALF_GRID, 0, -HALF_GRID + (index - 30)];
+export function getHalfGrid(boardSize: number): number {
+  const gridSize = (boardSize + 4) / 4;
+  return Math.floor(gridSize / 2);
 }
 
-export type TileType = 'bank' | 'normal' | 'bonus';
+export function getTilePosition(index: number, boardSize: number = BOARD_SIZE): [number, number, number] {
+  const gridSize = (boardSize + 4) / 4;
+  const halfGrid = Math.floor(gridSize / 2);
+  const side = gridSize - 1;
+
+  if (index <= side) {
+    return [halfGrid - index, 0, halfGrid];
+  }
+  if (index <= 2 * side) {
+    return [-halfGrid, 0, halfGrid - (index - side)];
+  }
+  if (index <= 3 * side) {
+    return [-(halfGrid - (index - 2 * side)), 0, -halfGrid];
+  }
+  return [halfGrid, 0, -halfGrid + (index - 3 * side)];
+}
+
+export type TileType = 'bank' | 'normal' | 'bonus_10' | 'bonus_x2';
 
 export type GameMode = 'classic' | 'strict_bank';
 export type TurnMode = 'simultaneous' | 'turn-based';
 export type CameraMode = 'follow' | 'isometric' | 'top-down';
 
 export type GameSettings = {
+  boardSize: number;
+  playerCount: number;
   trapDropPercentage: number;
   stealPercentage: number;
   turnMode: TurnMode;
   aiDelay: boolean;
+  winTarget: number;
+  bankCount: number;
+  trapCount: number;
+  bonus10Count: number;
+  bonusX2Count: number;
 };
 
 export type Player = {
   id: string;
   isAI: boolean;
   position: number;
-  visualPosition: number;
   stepsRemaining: number;
   carriedCoins: number;
   bankedCoins: number;
@@ -101,27 +113,43 @@ export type GameState = {
   tick: () => void;
 };
 
-function generateTiles(mode: GameMode): TileType[] {
-  const tiles: TileType[] = Array(BOARD_SIZE).fill('normal');
-  
-  if (mode === 'classic') {
-    tiles[0] = 'bank';
-  } else {
-    // Strict bank mode: 6 banks distributed evenly
-    [0, 7, 13, 20, 27, 33].forEach(i => tiles[i] = 'bank');
+// 在 available 位置中均匀选取 count 个位置
+function distributeEvenly(available: number[], count: number): number[] {
+  if (count <= 0) return [];
+  const n = available.length;
+  if (count >= n) return [...available];
+  const result: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const idx = Math.floor((i + 0.5) * n / count);
+    result.push(available[idx]);
   }
-  
-  // Fixed bonus tiles (5 tiles evenly distributed)
-  [4, 10, 17, 24, 30].forEach(i => {
-    if (tiles[i] === 'normal') {
-      tiles[i] = 'bonus';
-    }
-  });
-  
+  return result;
+}
+
+function generateTiles(mode: GameMode, settings: GameSettings): TileType[] {
+  const bs = settings.boardSize;
+  const tiles: TileType[] = Array(bs).fill('normal');
+  const all = Array.from({ length: bs }, (_, i) => i);
+
+  tiles[0] = 'bank';
+  if (settings.bankCount > 1) {
+    const avail = all.filter(i => tiles[i] === 'normal');
+    distributeEvenly(avail, settings.bankCount - 1).forEach(p => { tiles[p] = 'bank'; });
+  }
+
+  let avail = all.filter(i => tiles[i] === 'normal');
+  distributeEvenly(avail, settings.bonus10Count).forEach(p => { tiles[p] = 'bonus_10'; });
+
+  avail = all.filter(i => tiles[i] === 'normal');
+  distributeEvenly(avail, settings.bonusX2Count).forEach(p => { tiles[p] = 'bonus_x2'; });
+
   return tiles;
 }
 
-const FIXED_TRAP_POSITIONS = [3, 8, 12, 18, 23, 28, 34, 38];
+function generateTraps(tiles: TileType[], trapCount: number): Trap[] {
+  const avail = Array.from({ length: tiles.length }, (_, i) => i).filter(i => tiles[i] === 'normal');
+  return distributeEvenly(avail, trapCount).map(pos => ({ id: uuidv4(), position: pos }));
+}
 
 export const useGameStore = create<GameState>((set, get) => ({
   players: [],
@@ -132,10 +160,17 @@ export const useGameStore = create<GameState>((set, get) => ({
   winner: null,
   gameMode: null,
   settings: {
+    boardSize: 40,
+    playerCount: 3,
     trapDropPercentage: 50,
     stealPercentage: 50,
     turnMode: 'turn-based',
-    aiDelay: false
+    aiDelay: false,
+    winTarget: 200,
+    bankCount: 6,
+    trapCount: 12,
+    bonus10Count: 6,
+    bonusX2Count: 2
   },
   currentPlayerIndex: 0,
   autoSpin: false,
@@ -159,22 +194,29 @@ export const useGameStore = create<GameState>((set, get) => ({
   setCameraMode: (mode: CameraMode) => set({ cameraMode: mode }),
 
   initGame: (mode: GameMode, settings: GameSettings) => {
-    const newTiles = generateTiles(mode);
-    const initialTraps: Trap[] = FIXED_TRAP_POSITIONS.map(pos => ({
-      id: uuidv4(),
-      position: pos
-    }));
+    const newTiles = generateTiles(mode, settings);
+    const initialTraps = generateTraps(newTiles, settings.trapCount);
+
+    const PLAYER_COLORS = ['#3b82f6', '#ef4444', '#10b981'];
+    const players: Player[] = [];
+    for (let i = 0; i < settings.playerCount; i++) {
+      players.push({
+        id: `p${i + 1}`,
+        isAI: i > 0,
+        position: 0, stepsRemaining: 0,
+        carriedCoins: 0, bankedCoins: 0,
+        color: PLAYER_COLORS[i],
+        cooldown: 0, diceResult: null, nextDiceResult: null,
+        autoRollAt: null, message: null, messageTimeout: 0
+      });
+    }
 
     set(state => ({
       gameId: state.gameId + 1,
       gameMode: mode,
       settings,
       currentPlayerIndex: 0,
-      players: [
-        { id: 'p1', isAI: false, position: 0, visualPosition: 0, stepsRemaining: 0, carriedCoins: 0, bankedCoins: 0, color: '#3b82f6', cooldown: 0, diceResult: null, nextDiceResult: null, autoRollAt: null, message: null, messageTimeout: 0 },
-        { id: 'p2', isAI: true, position: 0, visualPosition: 0, stepsRemaining: 0, carriedCoins: 0, bankedCoins: 0, color: '#ef4444', cooldown: 0, diceResult: null, nextDiceResult: null, autoRollAt: null, message: null, messageTimeout: 0 },
-        { id: 'p3', isAI: true, position: 0, visualPosition: 0, stepsRemaining: 0, carriedCoins: 0, bankedCoins: 0, color: '#10b981', cooldown: 0, diceResult: null, nextDiceResult: null, autoRollAt: null, message: null, messageTimeout: 0 }
-      ],
+      players,
       tiles: newTiles,
       traps: initialTraps,
       droppedCoins: [],
@@ -183,7 +225,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }));
   },
 
-    rollDice: (playerId: string) => {
+  rollDice: (playerId: string) => {
     const state = get();
     if (state.winner) return;
     if (Date.now() < state.pauseUntil) return;
@@ -192,9 +234,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     const player = state.players[playerIndex];
     if (!player || player.stepsRemaining > 0) return;
 
-    // 如果是轮流模式，检查是否轮到该玩家
-    if (state.settings.turnMode === 'turn-based' && state.currentPlayerIndex !== playerIndex) {
-      return;
+    // 如果是轮流模式，检查是否轮到该玩家，且本回合尚未掷过骰子
+    if (state.settings.turnMode === 'turn-based') {
+      if (state.currentPlayerIndex !== playerIndex) return;
+      if (player.diceResult !== null) return;
     }
 
     // 如果是同时模式，检查冷却时间
@@ -202,8 +245,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
-    const d1 = player.nextDiceResult ? player.nextDiceResult[0] : Math.floor(Math.random() * 6) + 1;
-    const d2 = player.nextDiceResult ? player.nextDiceResult[1] : Math.floor(Math.random() * 6) + 1;
+    let d1: number, d2: number;
+    if (player.nextDiceResult) {
+      [d1, d2] = player.nextDiceResult;
+    } else {
+      [d1, d2] = generateDice(player, state.players, state.tiles, state.traps, state.gameMode, state.settings.boardSize, state.settings.turnMode);
+    }
     const steps = d1 + d2;
 
     set(state => ({
@@ -221,6 +268,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (state.winner) return;
     if (Date.now() < state.pauseUntil) return;
 
+    const bs = state.settings.boardSize;
     let newPlayers = [...state.players];
     let newTraps = [...state.traps];
     let newDroppedCoins = [...state.droppedCoins];
@@ -254,6 +302,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
+    // 在实时模式下，玩家行动完毕且冷却结束后，清除 diceResult 以允许下一次掷骰
+    if (state.settings.turnMode === 'simultaneous') {
+      newPlayers = newPlayers.map(p => {
+        if (p.stepsRemaining === 0 && p.diceResult !== null && p.cooldown < now) {
+          return { ...p, diceResult: null };
+        }
+        return p;
+      });
+    }
+
     // 1. 生成预计算的骰子结果（nextDiceResult）和自动掷骰时间（autoRollAt）
     newPlayers = newPlayers.map((p, i) => {
       const isMyTurn = state.settings.turnMode === 'simultaneous' || newCurrentPlayerIndex === i;
@@ -265,8 +323,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           if (isAnyoneMoving) return p;
         }
 
-        const d1 = Math.floor(Math.random() * 6) + 1;
-        const d2 = Math.floor(Math.random() * 6) + 1;
+        const [d1, d2] = generateDice(p, newPlayers, state.tiles, newTraps, state.gameMode, bs, state.settings.turnMode);
         
         // 决定延迟时间
         const isHumanAutoSpin = !p.isAI && state.autoSpin;
@@ -313,7 +370,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const p = newPlayers[i];
       const justRolledThisTick = p.diceResult !== null && state.players[i].diceResult === null;
       if (p.stepsRemaining > 0 && !justRolledThisTick) {
-        const nextPos = (p.position + 1) % BOARD_SIZE;
+        const nextPos = (p.position + 1) % state.settings.boardSize;
         let newCarried = p.carriedCoins + 1; // 1 coin per step
         let newBanked = p.bankedCoins;
         let newMessage = p.message;
@@ -328,7 +385,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           
           // Spawn flying coins from ground to backpack
           const numCoinsToFly = Math.min(totalAmount, 15);
-          const tilePos = getTilePosition(nextPos);
+          const tilePos = getTilePosition(nextPos, bs);
           for (let c = 0; c < numCoinsToFly; c++) {
             const duration = 400 + Math.random() * 200;
             newFlyingCoins.push({
@@ -363,7 +420,7 @@ export const useGameStore = create<GameState>((set, get) => ({
               if (stealAmount > 0) {
                 // Spawn flying coins for stealing
                 const numCoinsToFly = Math.min(stealAmount, 15);
-                const tilePos = getTilePosition(nextPos);
+                const tilePos = getTilePosition(nextPos, bs);
                 for (let c = 0; c < numCoinsToFly; c++) {
                   const duration = 500 + Math.random() * 200;
                   newFlyingCoins.push({
@@ -398,13 +455,13 @@ export const useGameStore = create<GameState>((set, get) => ({
           }
         }
 
-        // Passing start in classic mode
-        if (state.gameMode === 'classic' && nextPos === 0) {
+        // Passing bank in classic mode
+        if (state.gameMode === 'classic' && state.tiles[nextPos] === 'bank') {
           if (newCarried > 0) {
             // Spawn flying coins
             const numCoinsToFly = Math.min(newCarried, 20); // Cap visual coins
-            const startPos = getTilePosition(0); // Player is arriving at 0
-            const endPos = getTilePosition(0);
+            const startPos = getTilePosition(0, bs);
+            const endPos = getTilePosition(0, bs);
             for (let c = 0; c < numCoinsToFly; c++) {
               const duration = 600 + Math.random() * 200;
               newFlyingCoins.push({
@@ -429,25 +486,13 @@ export const useGameStore = create<GameState>((set, get) => ({
             newCarried = 0;
             newMessage = `Banked!`;
             newMessageTimeout = now + 2000;
-            if (newBanked >= WIN_TARGET) {
+            if (newBanked >= state.settings.winTarget) {
               newWinner = p.id;
             }
           }
         }
 
-        let currentStepsRemaining = p.stepsRemaining;
-        
-        // 轮流模式下，如果最后一步的落点有其他玩家，则多走一步
-        if (state.settings.turnMode === 'turn-based' && currentStepsRemaining === 1) {
-          const isOccupied = newPlayers.some((otherPlayer, otherIdx) => otherIdx !== i && otherPlayer.position === nextPos);
-          if (isOccupied) {
-            currentStepsRemaining++;
-            newMessage = "Bumped!";
-            newMessageTimeout = now + 1000;
-          }
-        }
-
-        const isLastStep = currentStepsRemaining === 1;
+        const isLastStep = p.stepsRemaining === 1;
         
         // Landing effects
         if (isLastStep) {
@@ -460,8 +505,8 @@ export const useGameStore = create<GameState>((set, get) => ({
             if (newCarried > 0) {
               // Spawn flying coins
               const numCoinsToFly = Math.min(newCarried, 20); // Cap visual coins
-              const startPos = getTilePosition(nextPos); // Player is arriving at nextPos
-              const endPos = getTilePosition(nextPos);
+              const startPos = getTilePosition(nextPos, bs);
+              const endPos = getTilePosition(nextPos, bs);
               for (let c = 0; c < numCoinsToFly; c++) {
                 const duration = 600 + Math.random() * 200;
                 newFlyingCoins.push({
@@ -486,15 +531,21 @@ export const useGameStore = create<GameState>((set, get) => ({
               newCarried = 0;
               newMessage = `Banked!`;
               newMessageTimeout = now + 2000;
-              if (newBanked >= WIN_TARGET) {
+              if (newBanked >= state.settings.winTarget) {
                 newWinner = p.id;
               }
             }
           }
 
-          if (tile === 'bonus') {
-            newCarried += 5;
-            newMessage = `Bonus +5!`;
+          if (tile === 'bonus_10') {
+            newCarried += 10;
+            newMessage = `+10!`;
+            newMessageTimeout = now + 2000;
+          }
+
+          if (tile === 'bonus_x2') {
+            newCarried = Math.floor(newCarried * 1.5);
+            newMessage = `+50%!`;
             newMessageTimeout = now + 2000;
           }
 
@@ -511,13 +562,13 @@ export const useGameStore = create<GameState>((set, get) => ({
               const part2 = Math.floor(dropAmount / 3);
               const part3 = dropAmount - part1 - part2;
               
-              const startTilePos = getTilePosition(nextPos);
+              const startTilePos = getTilePosition(nextPos, bs);
               const spawnDroppedCoins = (amount: number, offset: number) => {
                 if (amount <= 0) return;
-                const dropPos = (nextPos - offset + BOARD_SIZE) % BOARD_SIZE;
+                const dropPos = (nextPos - offset + state.settings.boardSize) % state.settings.boardSize;
                 newDroppedCoins.push({ id: uuidv4(), position: dropPos, amount });
                 
-                const endTilePos = getTilePosition(dropPos);
+                const endTilePos = getTilePosition(dropPos, bs);
                 const numCoinsToFly = Math.min(amount, 10);
                 for (let c = 0; c < numCoinsToFly; c++) {
                   const duration = 500 + Math.random() * 200;
@@ -552,7 +603,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         newPlayers[i] = {
           ...p,
           position: nextPos,
-          stepsRemaining: currentStepsRemaining - 1,
+          stepsRemaining: p.stepsRemaining - 1,
           carriedCoins: newCarried,
           bankedCoins: newBanked,
           message: newMessage,

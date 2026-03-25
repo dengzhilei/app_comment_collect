@@ -6,13 +6,13 @@ import { Board } from './components/Board';
 import { Players, getInterpolatedPosition } from './components/Player';
 import { CenterLandmark } from './components/CenterLandmark';
 import { UI } from './components/UI';
-import { useGameStore, BOARD_SIZE } from './store';
+import { useGameStore } from './store';
 
-// 摄像机控制器：负责在 3D 场景中跟随玩家（主视角）
 function CameraController() {
   const players = useGameStore(state => state.players);
   const turnMode = useGameStore(state => state.settings.turnMode);
   const cameraMode = useGameStore(state => state.cameraMode);
+  const boardSize = useGameStore(state => state.settings.boardSize);
   
   // 获取当前人类玩家（非 AI）
   const humanPlayer = players.find(p => !p.isAI);
@@ -55,29 +55,28 @@ function CameraController() {
   // 辅助函数：计算环形棋盘上的最短距离
   const getDist = (a: number, b: number) => {
     let d = Math.abs(a - b);
-    if (d > BOARD_SIZE / 2) d = BOARD_SIZE - d;
+    if (d > boardSize / 2) d = boardSize - d;
     return d;
   };
 
-  // 辅助函数：计算环形棋盘上的有向差值 (from -> to)
   const getDiff = (from: number, to: number) => {
     let diff = to - from;
-    if (diff < -BOARD_SIZE / 2) diff += BOARD_SIZE;
-    if (diff > BOARD_SIZE / 2) diff -= BOARD_SIZE;
+    if (diff < -boardSize / 2) diff += boardSize;
+    if (diff > boardSize / 2) diff -= boardSize;
     return diff;
   };
 
-  // 辅助函数：计算环形棋盘上的中点
   const getMidpoint = (a: number, b: number) => {
     let mid = a + getDiff(a, b) / 2;
-    return (mid + BOARD_SIZE) % BOARD_SIZE;
+    return (mid + boardSize) % boardSize;
   };
 
   useFrame((state, delta) => {
     if (!targetPlayer) return;
 
-    // 如果游戏重置（位置、金币、步数都归零），则瞬间将视觉位置归零
-    if (targetPlayer.position === 0 && targetPlayer.bankedCoins === 0 && targetPlayer.carriedCoins === 0 && targetPlayer.stepsRemaining === 0) {
+    // 如果游戏重置（所有玩家的位置、金币、步数都归零），则瞬间将视觉位置归零
+    const isGameReset = players.every(p => p.position === 0 && p.bankedCoins === 0 && p.carriedCoins === 0 && p.stepsRemaining === 0);
+    if (isGameReset) {
       if (visualPosRef.current !== 0) {
         visualPosRef.current = 0;
         logicalTargetPosRef.current = 0;
@@ -128,7 +127,7 @@ function CameraController() {
         if (aiStaticCamPosRef.current === null && pendingDice !== null) {
           const startPos = currentPlayer.position;
           const steps = pendingDice[0] + pendingDice[1];
-          const endPos = (startPos + steps) % BOARD_SIZE;
+          const endPos = (startPos + steps) % boardSize;
           
           // 检查当前镜头是否能同时看到起点和终点
           const canSeeMove = getDist(logicalTargetPosRef.current, startPos) <= VIEW_RADIUS && 
@@ -153,7 +152,7 @@ function CameraController() {
               
               // 将镜头向人类方向偏移，但不能超过 maxDev
               const shift = Math.sign(diffHumanMid) * Math.min(Math.abs(diffHumanMid), maxDev);
-              aiStaticCamPosRef.current = (midPos + shift + BOARD_SIZE) % BOARD_SIZE;
+              aiStaticCamPosRef.current = (midPos + shift + boardSize) % boardSize;
             } else {
               // 下一个不是人类，直接居中显示 AI 的移动
               aiStaticCamPosRef.current = midPos;
@@ -178,7 +177,7 @@ function CameraController() {
     turnJustSwitchedRef.current = false;
 
     // 规范化 targetCamPos
-    targetCamPos = (targetCamPos + BOARD_SIZE) % BOARD_SIZE;
+    targetCamPos = (targetCamPos + boardSize) % boardSize;
 
     if (shouldHardCut) {
       logicalTargetPosRef.current = targetCamPos;
@@ -197,11 +196,10 @@ function CameraController() {
     }
 
     // 规范化 visualPosRef
-    visualPosRef.current = (visualPosRef.current + BOARD_SIZE) % BOARD_SIZE;
+    visualPosRef.current = (visualPosRef.current + boardSize) % boardSize;
 
-    // 获取当前视觉位置和稍微靠前一点的位置，用于计算玩家的朝向
-    const pos3D = getInterpolatedPosition(visualPosRef.current);
-    const nextPos3D = getInterpolatedPosition((visualPosRef.current + 0.1) % BOARD_SIZE);
+    const pos3D = getInterpolatedPosition(visualPosRef.current, boardSize);
+    const nextPos3D = getInterpolatedPosition((visualPosRef.current + 0.1) % boardSize, boardSize);
     
     // 计算玩家朝向的角度 (Y轴旋转)
     const dx = nextPos3D.x - pos3D.x;
