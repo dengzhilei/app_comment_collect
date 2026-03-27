@@ -587,23 +587,31 @@ export const useGameStore = create<GameState>((set, get) => ({
               const dmg = Math.min(target.op.bankedCoins, state.settings.attackDamage);
               const targetLabel = newPlayers[target.idx].isAI ? 'AI ' + newPlayers[target.idx].id : 'You';
               if (dmg > 0) {
-                const tPos = getTilePosition(target.op.position, bs);
+                const halfGrid = getHalfGrid(bs);
+                const pillarScale = halfGrid / 5;
+                const pillarRadius = 1.5 * pillarScale;
+                const pillarAngle = (target.idx / newPlayers.length) * Math.PI * 2;
+                const pillarX = Math.cos(pillarAngle) * pillarRadius;
+                const pillarZ = Math.sin(pillarAngle) * pillarRadius;
+                const progress = Math.min(target.op.bankedCoins / state.settings.winTarget, 1);
+                const pillarY = Math.max(progress * 4, 0.1);
+
                 const numCoinsToFly = Math.min(dmg, 20);
                 for (let c = 0; c < numCoinsToFly; c++) {
-                  const angle = (c / numCoinsToFly) * Math.PI * 2 + Math.random() * 0.5;
-                  const radius = 1.5 + Math.random() * 2;
+                  const flyAngle = (c / numCoinsToFly) * Math.PI * 2 + Math.random() * 0.5;
+                  const radius = 1.5 + Math.random() * 2.5;
                   const duration = 600 + Math.random() * 400;
                   newFlyingCoins.push({
                     id: uuidv4(),
                     startPos: [
-                      tPos[0] + (Math.random() - 0.5) * 0.5,
-                      1.5 + Math.random() * 0.5,
-                      tPos[2] + (Math.random() - 0.5) * 0.5
+                      pillarX + (Math.random() - 0.5) * 0.5,
+                      pillarY * 0.5 + Math.random() * pillarY * 0.5,
+                      pillarZ + (Math.random() - 0.5) * 0.5
                     ],
                     endPos: [
-                      tPos[0] + Math.cos(angle) * radius,
+                      pillarX + Math.cos(flyAngle) * radius,
                       3 + Math.random() * 2,
-                      tPos[2] + Math.sin(angle) * radius
+                      pillarZ + Math.sin(flyAngle) * radius
                     ],
                     startTime: now + c * 30,
                     duration,
@@ -618,11 +626,8 @@ export const useGameStore = create<GameState>((set, get) => ({
                   messageTimeout: now + 2500
                 };
                 newMessage = `Demolish! ${targetLabel} bank -${dmg}`;
-                newTileFlashes.push({ position: nextPos, color: '#ef4444', until: now + 1000 });
-                newTileFlashes.push({ position: target.op.position, color: '#ef4444', until: now + 1200 });
               } else {
                 newMessage = `Demolish missed! ${targetLabel} bank = 0`;
-                newTileFlashes.push({ position: nextPos, color: '#fb923c', until: now + 600 });
               }
               newMessageTimeout = now + 2000;
             }
