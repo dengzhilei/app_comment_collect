@@ -67,6 +67,8 @@ export function UI() {
   const toggleAutoSpin = useGameStore(state => state.toggleAutoSpin);
   const cameraMode = useGameStore(state => state.cameraMode);
   const setCameraMode = useGameStore(state => state.setCameraMode);
+  const cameraZoom = useGameStore(state => state.cameraZoom);
+  const setCameraZoom = useGameStore(state => state.setCameraZoom);
   const setNextDice = useGameStore(state => state.setNextDice);
 
   const [gmOpen, setGmOpen] = useState(false);
@@ -480,27 +482,38 @@ export function UI() {
     <div className="absolute inset-0 pointer-events-none z-10">
       <CountdownOverlay />
       {/* Top Right: Menu Button & Camera Toggle */}
-      <div className="absolute top-4 right-4 pointer-events-auto flex gap-2">
-        <button
-          onClick={() => {
-            const modes: CameraMode[] = ['follow', 'isometric', 'top-down'];
-            const nextMode = modes[(modes.indexOf(cameraMode) + 1) % modes.length];
-            setCameraMode(nextMode);
-          }}
-          className="bg-gray-900/80 backdrop-blur border border-gray-700 p-3 rounded-xl text-gray-300 hover:text-white hover:bg-blue-600 hover:border-blue-500 transition-all shadow-lg flex items-center gap-2"
-          title="Toggle Camera View"
-        >
-          <Camera size={20} />
-          <span className="font-bold text-sm hidden sm:inline capitalize">{cameraMode}</span>
-        </button>
-        <button
-          onClick={resetToMenu}
-          className="bg-gray-900/80 backdrop-blur border border-gray-700 p-3 rounded-xl text-gray-300 hover:text-white hover:bg-red-600 hover:border-red-500 transition-all shadow-lg flex items-center gap-2"
-          title="Back to Menu"
-        >
-          <Home size={20} />
-          <span className="font-bold text-sm hidden sm:inline">Menu</span>
-        </button>
+      <div className="absolute top-4 right-4 pointer-events-auto flex flex-col items-end gap-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              const modes: CameraMode[] = ['follow', 'isometric', 'top-down'];
+              const nextMode = modes[(modes.indexOf(cameraMode) + 1) % modes.length];
+              setCameraMode(nextMode);
+            }}
+            className="bg-gray-900/80 backdrop-blur border border-gray-700 p-3 rounded-xl text-gray-300 hover:text-white hover:bg-blue-600 hover:border-blue-500 transition-all shadow-lg flex items-center gap-2"
+            title="Toggle Camera View"
+          >
+            <Camera size={20} />
+            <span className="font-bold text-sm hidden sm:inline capitalize">{cameraMode}</span>
+          </button>
+          <button
+            onClick={resetToMenu}
+            className="bg-gray-900/80 backdrop-blur border border-gray-700 p-3 rounded-xl text-gray-300 hover:text-white hover:bg-red-600 hover:border-red-500 transition-all shadow-lg flex items-center gap-2"
+            title="Back to Menu"
+          >
+            <Home size={20} />
+            <span className="font-bold text-sm hidden sm:inline">Menu</span>
+          </button>
+        </div>
+        <div className="bg-gray-900/80 backdrop-blur border border-gray-700 rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
+          <span className="text-gray-400 text-xs">Zoom</span>
+          <input
+            type="range" min="0.5" max="2.0" step="0.1" value={cameraZoom}
+            onChange={(e) => setCameraZoom(Number(e.target.value))}
+            className="w-20 accent-blue-500"
+          />
+          <span className="text-white text-xs font-bold w-8 text-center">{cameraZoom.toFixed(1)}x</span>
+        </div>
       </div>
 
       {/* Top Bar: Player Stats */}

@@ -12,6 +12,7 @@ function CameraController() {
   const players = useGameStore(state => state.players);
   const turnMode = useGameStore(state => state.settings.turnMode);
   const cameraMode = useGameStore(state => state.cameraMode);
+  const cameraZoom = useGameStore(state => state.cameraZoom);
   const boardSize = useGameStore(state => state.settings.boardSize);
   
   // 获取当前人类玩家（非 AI）
@@ -211,18 +212,17 @@ function CameraController() {
     let targetPos: THREE.Vector3;
     let targetLookAt: THREE.Vector3;
 
+    const z = 1 / cameraZoom;
+
     if (cameraMode === 'isometric') {
-      // 等距视角：固定角度，跟随玩家
-      targetPos = new THREE.Vector3(pos3D.x + 10, pos3D.y + groupOffsetY + 12, pos3D.z + 10);
+      targetPos = new THREE.Vector3(pos3D.x + 8 * z, pos3D.y + groupOffsetY + 10 * z, pos3D.z + 8 * z);
       targetLookAt = new THREE.Vector3(pos3D.x, pos3D.y + groupOffsetY, pos3D.z);
     } else if (cameraMode === 'top-down') {
-      // 俯视角：从正上方往下看，稍微带点角度
-      targetPos = new THREE.Vector3(pos3D.x, pos3D.y + groupOffsetY + 18, pos3D.z + 4);
+      targetPos = new THREE.Vector3(pos3D.x, pos3D.y + groupOffsetY + 14 * z, pos3D.z + 3 * z);
       targetLookAt = new THREE.Vector3(pos3D.x, pos3D.y + groupOffsetY, pos3D.z);
     } else {
-      // 默认跟随视角：位于玩家后方，随玩家旋转
-      const distance = 8;
-      const height = 6;
+      const distance = 6 * z;
+      const height = 4.5 * z;
       const camX = pos3D.x - Math.sin(angle) * distance;
       const camZ = pos3D.z - Math.cos(angle) * distance;
       const camY = pos3D.y + groupOffsetY + height;
@@ -332,7 +332,7 @@ export function Game() {
       
       {players.length > 0 && (
         // 3D 渲染画布
-        <Canvas shadows camera={{ position: [0, 15, 15], fov: 45 }}>
+        <Canvas shadows camera={{ position: [0, 15, 15], fov: 45 }} gl={{ localClippingEnabled: true, stencil: true }}>
           <color attach="background" args={['#111827']} />
           <ambientLight intensity={0.5} />
           <directionalLight

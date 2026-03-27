@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>雕塑建造进度 Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #canvas-wrap { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+  canvas { display: block; }
+
+  .hud {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .progress-bar-wrap {
+    width: 320px;
+    height: 22px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 11px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #e8b86d, #d4a04a);
+    border-radius: 11px;
+    transition: width 0.6s ease;
+  }
+  .progress-text {
+    font-size: 14px;
+    color: #e8c84d;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+  .btn-invest {
+    pointer-events: auto;
+    padding: 12px 32px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #2a2a1a;
+    background: linear-gradient(135deg, #e8b86d, #d4a04a);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-invest:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(0,0,0,0.5); }
+  .btn-invest:active { transform: scale(0.97); }
+  .btn-invest:disabled { opacity: 0.5; cursor: default; transform: none; }
+  .btn-row { display: flex; gap: 10px; pointer-events: auto; }
+  .btn-sm {
+    pointer-events: auto;
+    padding: 6px 16px;
+    font-size: 13px;
+    color: #ccc;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .btn-sm:hover { background: rgba(255,255,255,0.2); }
+  .toast {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 16px 32px;
+    background: rgba(232,184,109,0.95);
+    color: #2a2a1a;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 12px;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  #loading {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px; color: #e8c84d; z-index: 30;
+  }
+  .file-hint {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    pointer-events: auto;
+    text-align: center;
+  }
+  .file-hint label {
+    padding: 8px 18px;
+    font-size: 13px;
+    background: rgba(255,255,255,0.1);
+    border: 1px dashed rgba(255,255,255,0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: inline-block;
+    color: #eee;
+  }
+  .file-hint label:hover { background: rgba(255,255,255,0.2); }
+  .file-hint input { display: none; }
+  .file-hint .sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+  body.drag-over::after {
+    content: '松开鼠标加载模型';
+    position: fixed; top:0; left:0; right:0; bottom:0;
+    background: rgba(232,184,109,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #e8c84d; z-index: 100;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">加载 Three.js 中...</div>
+<div id="canvas-wrap"></div>
+
+<div class="file-hint" id="file-hint">
+  <label>拖入或点击加载 .glb / .gltf 模型<input type="file" id="file-input" accept=".glb,.gltf"></label>
+  <div class="sub" id="model-name">当前无模型</div>
+</div>
+
+<div class="hud">
+  <div class="progress-text">建造进度: <span id="pct-text">0</span>%&nbsp;&nbsp;已投入: <span id="coin-text">0</span> 金币</div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="pct-bar"></div>
+  </div>
+  <button class="btn-invest" id="btn-invest">投入金币（随机 5~15%）</button>
+  <div class="btn-row">
+    <button class="btn-sm" id="btn-30">设为30%</button>
+    <button class="btn-sm" id="btn-50">设为50%</button>
+    <button class="btn-sm" id="btn-100">设为100%</button>
+    <button class="btn-sm" id="btn-reset">重置 0%</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+document.getElementById('loading').textContent = '加载模型中...';
+
+var wrap = document.getElementById('canvas-wrap');
+var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, stencil: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.localClippingEnabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.4;
+wrap.appendChild(renderer.domElement);
+
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 200);
+camera.position.set(0, 2, 5);
+
+var controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.target.set(0, 1, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+var dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+dirLight.position.set(3, 5, 4);
+scene.add(dirLight);
+scene.add(new THREE.DirectionalLight(0x8899bb, 0.5).position.set(-3, 2, -2) && new THREE.DirectionalLight(0x8899bb, 0.5));
+scene.add(new THREE.GridHelper(6, 20, 0x444466, 0x333355));
+
+var clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+
+var modelMinY = 0, modelMaxY = 2, modelRadius = 1.5;
+var progress = 0, coins = 0, currentClipH = 0;
+var loadedObj = null;
+
+// ===== Stencil Cap（完全对照 Three.js 官方 webgl_clipping_stencil 示例）=====
+var stencilGroup = null;
+var capPlaneMesh;
+
+(function setupCap() {
+  var capMat = new THREE.MeshStandardMaterial({
+    color: 0xccaa88,
+    metalness: 0.1,
+    roughness: 0.75,
+    stencilWrite: true,
+    stencilRef: 0,
+    stencilFunc: THREE.NotEqualStencilFunc,
+    stencilFail: THREE.ReplaceStencilOp,
+    stencilZFail: THREE.ReplaceStencilOp,
+    stencilZPass: THREE.ReplaceStencilOp,
+  });
+  capPlaneMesh = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), capMat);
+  capPlaneMesh.renderOrder = 1.1;
+  capPlaneMesh.visible = false;
+  capPlaneMesh.onAfterRender = function(r) { r.clearStencil(); };
+  scene.add(capPlaneMesh);
+})();
+
+function createStencilGroupForModel(srcObj, plane, renderOrder) {
+  var group = new THREE.Group();
+
+  srcObj.traverse(function(child) {
+    if (!child.isMesh) return;
+
+    child.updateWorldMatrix(true, false);
+    var geo = child.geometry;
+
+    // 背面 stencil +1
+    var baseMat = new THREE.MeshBasicMaterial();
+    baseMat.depthWrite = false;
+    baseMat.depthTest = false;
+    baseMat.colorWrite = false;
+    baseMat.stencilWrite = true;
+    baseMat.stencilFunc = THREE.AlwaysStencilFunc;
+
+    var mat0 = baseMat.clone();
+    mat0.side = THREE.BackSide;
+    mat0.clippingPlanes = [plane];
+    mat0.stencilFail = THREE.IncrementWrapStencilOp;
+    mat0.stencilZFail = THREE.IncrementWrapStencilOp;
+    mat0.stencilZPass = THREE.IncrementWrapStencilOp;
+
+    var mesh0 = new THREE.Mesh(geo, mat0);
+    mesh0.applyMatrix4(child.matrixWorld);
+    mesh0.renderOrder = renderOrder;
+    group.add(mesh0);
+
+    // 正面 stencil -1
+    var mat1 = baseMat.clone();
+    mat1.side = THREE.FrontSide;
+    mat1.clippingPlanes = [plane];
+    mat1.stencilFail = THREE.DecrementWrapStencilOp;
+    mat1.stencilZFail = THREE.DecrementWrapStencilOp;
+    mat1.stencilZPass = THREE.DecrementWrapStencilOp;
+
+    var mesh1 = new THREE.Mesh(geo, mat1);
+    mesh1.applyMatrix4(child.matrixWorld);
+    mesh1.renderOrder = renderOrder;
+    group.add(mesh1);
+  });
+
+  return group;
+}
+
+function applyClip(obj) {
+  loadedObj = obj;
+
+  obj.traverse(function(child) {
+    if (!child.isMesh) return;
+    var mats = Array.isArray(child.material) ? child.material : [child.material];
+    var newMats = mats.map(function(m) {
+      var mc = m.clone();
+      mc.clippingPlanes = [clipPlane];
+      mc.clipShadows = true;
+      mc.side = THREE.DoubleSide;
+      return mc;
+    });
+    child.material = Array.isArray(child.material) ? newMats : newMats[0];
+    child.renderOrder = 6;
+  });
+
+  if (stencilGroup) scene.remove(stencilGroup);
+  stencilGroup = createStencilGroupForModel(obj, clipPlane, 1);
+  scene.add(stencilGroup);
+}
+
+function setProgress(p) {
+  progress = Math.max(0, Math.min(1, p));
+  coins = Math.round(progress * 1000);
+  updateUI();
+}
+
+function updateUI() {
+  var pctVal = Math.round(progress * 100);
+  document.getElementById('pct-text').textContent = pctVal;
+  document.getElementById('pct-bar').style.width = pctVal + '%';
+  document.getElementById('coin-text').textContent = coins;
+  document.getElementById('btn-invest').disabled = progress >= 1;
+}
+
+var toastTid = 0;
+function showToast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTid);
+  toastTid = setTimeout(function() { el.classList.remove('show'); }, 1200);
+}
+
+var gltfLoader = new GLTFLoader();
+
+function loadModelScene(obj, name) {
+  if (loadedObj) {
+    scene.remove(loadedObj);
+    loadedObj = null;
+  }
+  if (stencilGroup) {
+    scene.remove(stencilGroup);
+    stencilGroup = null;
+  }
+
+  scene.add(obj);
+
+  var box = new THREE.Box3().setFromObject(obj);
+  var size = box.getSize(new THREE.Vector3());
+  var maxDim = Math.max(size.x, size.y, size.z);
+  var scale = 3.0 / maxDim;
+  obj.scale.multiplyScalar(scale);
+
+  box.setFromObject(obj);
+  var center = box.getCenter(new THREE.Vector3());
+  obj.position.x -= center.x;
+  obj.position.z -= center.z;
+  obj.position.y -= box.min.y;
+
+  box.setFromObject(obj);
+  modelMinY = box.min.y;
+  modelMaxY = box.max.y;
+  modelRadius = Math.max(size.x, size.z) * scale;
+
+  applyClip(obj);
+
+  progress = 0;
+  coins = 0;
+  currentClipH = modelMinY;
+  clipPlane.constant = modelMinY;
+  updateUI();
+  document.getElementById('btn-invest').disabled = false;
+
+  var midY = (modelMaxY + modelMinY) / 2;
+  controls.target.set(0, midY, 0);
+  camera.position.set(0, midY + 1.5, 5);
+
+  document.getElementById('model-name').textContent = '当前: ' + name;
+  document.getElementById('loading').style.display = 'none';
+  showToast(name + ' 加载成功!');
+}
+
+function loadFromFile(file) {
+  if (!file) return;
+  document.getElementById('loading').textContent = '加载模型中...';
+  document.getElementById('loading').style.display = '';
+  var url = URL.createObjectURL(file);
+  gltfLoader.load(url, function(gltf) {
+    loadModelScene(gltf.scene, file.name);
+    URL.revokeObjectURL(url);
+  }, function(xhr) {
+    if (xhr.total > 0) {
+      document.getElementById('loading').textContent = '加载 ' + Math.round(xhr.loaded / xhr.total * 100) + '%';
+    }
+  }, function(err) {
+    document.getElementById('loading').textContent = '加载失败: ' + (err.message || err);
+    console.error(err);
+  });
+}
+
+// 点击选择文件
+document.getElementById('file-input').addEventListener('change', function(e) {
+  loadFromFile(e.target.files[0]);
+  this.value = '';
+});
+
+// 拖拽支持
+document.body.addEventListener('dragover', function(e) {
+  e.preventDefault();
+  document.body.classList.add('drag-over');
+});
+document.body.addEventListener('dragleave', function() {
+  document.body.classList.remove('drag-over');
+});
+document.body.addEventListener('drop', function(e) {
+  e.preventDefault();
+  document.body.classList.remove('drag-over');
+  var file = e.dataTransfer.files[0];
+  if (file) loadFromFile(file);
+});
+
+// 隐藏初始 loading
+document.getElementById('loading').style.display = 'none';
+
+document.getElementById('btn-invest').addEventListener('click', function() {
+  if (progress >= 1) return;
+  var addPct = 5 + Math.floor(Math.random() * 11);
+  var addCoins = addPct * 10;
+  progress = Math.min(1, progress + addPct / 100);
+  coins += addCoins;
+  updateUI();
+  showToast('+' + addCoins + ' 金币 (' + addPct + '%)');
+  if (progress >= 1) setTimeout(function() { showToast('雕塑建造完成!'); }, 800);
+});
+
+document.getElementById('btn-30').addEventListener('click', function() { setProgress(0.3); showToast('设为 30%'); });
+document.getElementById('btn-50').addEventListener('click', function() { setProgress(0.5); showToast('设为 50%'); });
+document.getElementById('btn-100').addEventListener('click', function() { setProgress(1.0); showToast('设为 100%'); });
+document.getElementById('btn-reset').addEventListener('click', function() { setProgress(0); currentClipH = modelMinY; showToast('已重置'); });
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+
+  var extra = (modelMaxY - modelMinY) * 0.02;
+  var targetH = modelMinY + progress * (modelMaxY - modelMinY + extra);
+  currentClipH += (targetH - currentClipH) * 0.06;
+  clipPlane.constant = currentClipH;
+
+  var showCap = progress > 0.005 && progress < 0.995;
+  // 盖面跟随裁剪面：用 coplanarPoint + lookAt（对照官方示例）
+  clipPlane.coplanarPoint(capPlaneMesh.position);
+  capPlaneMesh.lookAt(
+    capPlaneMesh.position.x - clipPlane.normal.x,
+    capPlaneMesh.position.y - clipPlane.normal.y,
+    capPlaneMesh.position.z - clipPlane.normal.z
+  );
+  capPlaneMesh.visible = showCap;
+  if (stencilGroup) stencilGroup.visible = showCap;
+
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', function() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
