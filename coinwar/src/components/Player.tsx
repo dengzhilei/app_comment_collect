@@ -64,7 +64,6 @@ export function PlayerComponent({ id }: { id: string }) {
     groupRef.current.position.set(pos3D.x + offsetX, pos3D.y, pos3D.z + offsetZ);
     groupRef.current.rotation.y = angle;
 
-    // 添加移动时的跳跃动画（利用正弦函数）
     const isMoving = Math.abs(diff) > 0.01;
     if (isMoving && bodyRef.current) {
       bodyRef.current.position.y = 0.5 + Math.abs(Math.sin(visualPosRef.current * Math.PI)) * 0.5;
@@ -140,10 +139,15 @@ export function PlayerComponent({ id }: { id: string }) {
         </group>
       </group>
 
-      {/* Message */}
       {player.message && (
         <Billboard position={[0, 2.5, 0]}>
-          <Text fontSize={0.4} color="#ef4444" outlineWidth={0.02} outlineColor="#fff" fontWeight="bold">
+          <Text
+            fontSize={player.message.startsWith('Bank') ? 0.5 : 0.4}
+            color={player.message.startsWith('Bank') ? '#ff6633' : '#ef4444'}
+            outlineWidth={player.message.startsWith('Bank') ? 0.03 : 0.02}
+            outlineColor="#000"
+            fontWeight="bold"
+          >
             {player.message}
           </Text>
         </Billboard>

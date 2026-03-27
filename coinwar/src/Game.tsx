@@ -267,6 +267,8 @@ function FlyingCoins() {
 
 function FlyingCoinMesh({ coin }: { coin: import('./store').FlyingCoin }) {
   const meshRef = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
+  const baseScale = coin.scale ?? 1;
 
   useFrame(() => {
     if (!meshRef.current) return;
@@ -279,11 +281,8 @@ function FlyingCoinMesh({ coin }: { coin: import('./store').FlyingCoin }) {
     meshRef.current.visible = true;
 
     const progress = Math.min(elapsed / coin.duration, 1);
+    const easeProgress = progress * (2 - progress);
     
-    // Simple easing
-    const easeProgress = progress * (2 - progress); // easeOutQuad
-    
-    // Arc height
     const arcHeight = 3;
     const yOffset = Math.sin(progress * Math.PI) * arcHeight;
 
@@ -293,15 +292,24 @@ function FlyingCoinMesh({ coin }: { coin: import('./store').FlyingCoin }) {
       coin.startPos[2] + (coin.endPos[2] - coin.startPos[2]) * easeProgress
     );
 
-    // Spin
     meshRef.current.rotation.y += 0.2;
     meshRef.current.rotation.x += 0.1;
+
+    const fadeOut = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
+    const s = baseScale * fadeOut;
+    meshRef.current.scale.set(s, s, s);
+
+    if (matRef.current) {
+      matRef.current.opacity = fadeOut;
+    }
   });
+
+  const color = coin.color || '#fbbf24';
 
   return (
     <mesh ref={meshRef}>
       <cylinderGeometry args={[0.15, 0.15, 0.05, 12]} />
-      <meshStandardMaterial color="#fbbf24" metalness={0.8} roughness={0.2} />
+      <meshStandardMaterial ref={matRef} color={color} metalness={0.8} roughness={0.2} transparent />
     </mesh>
   );
 }

@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+@keyframes countdown-pop {
+  0% {
+    transform: scale(2);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+.animate-countdown-pop {
+  animation: countdown-pop 0.9s ease-out forwards;
+}

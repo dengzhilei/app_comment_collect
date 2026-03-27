@@ -26,7 +26,7 @@ export function getTilePosition(index: number, boardSize: number = BOARD_SIZE): 
   return [halfGrid, 0, -halfGrid + (index - 3 * side)];
 }
 
-export type TileType = 'bank' | 'normal' | 'bonus_10' | 'bonus_x2';
+export type TileType = 'bank' | 'normal' | 'bonus_10' | 'bonus_x2' | 'attack';
 
 export type GameMode = 'classic' | 'strict_bank';
 export type TurnMode = 'simultaneous' | 'turn-based';
@@ -44,6 +44,9 @@ export type GameSettings = {
   trapCount: number;
   bonus10Count: number;
   bonusX2Count: number;
+  attackCount: number;
+  attackDamage: number;
+  carryLimit: number;
 };
 
 export type Player = {
@@ -79,6 +82,14 @@ export type FlyingCoin = {
   endPos: [number, number, number];
   startTime: number;
   duration: number;
+  color?: string;
+  scale?: number;
+};
+
+export type TileFlash = {
+  position: number;
+  color: string;
+  until: number;
 };
 
 // 游戏全局状态管理 (Zustand)
@@ -88,6 +99,7 @@ export type GameState = {
   traps: Trap[]; // 场上存在的陷阱
   droppedCoins: DroppedCoin[]; // 场上掉落的金币
   flyingCoins: FlyingCoin[]; // 正在飞行的金币动画数据
+  tileFlashes: TileFlash[]; // 地格闪烁特效
   winner: string | null; // 获胜者 ID
   gameMode: GameMode | null; // 当前游戏模式
   settings: GameSettings; // 游戏设置
@@ -96,6 +108,7 @@ export type GameState = {
   gameId: number; // 游戏局数计数器，用于重置时强制刷新 3D 组件
   cameraMode: CameraMode; // 当前摄像机视角
   pauseUntil: number; // 暂停游戏逻辑直到指定时间戳
+  countdownUntil: number; // 开局倒计时结束时间戳（0 = 无倒计时）
   
   // 设置暂停时间
   setPauseUntil: (time: number) => void;
@@ -109,6 +122,8 @@ export type GameState = {
   setCameraMode: (mode: CameraMode) => void;
   // 掷骰子逻辑
   rollDice: (playerId: string) => void;
+  // GM：设置指定玩家下一次骰子结果
+  setNextDice: (playerId: string, dice: [number, number] | null) => void;
   // 游戏主循环 tick，每秒触发多次，处理移动、AI决策、陷阱等
   tick: () => void;
 };
@@ -143,6 +158,9 @@ function generateTiles(mode: GameMode, settings: GameSettings): TileType[] {
   avail = all.filter(i => tiles[i] === 'normal');
   distributeEvenly(avail, settings.bonusX2Count).forEach(p => { tiles[p] = 'bonus_x2'; });
 
+  avail = all.filter(i => tiles[i] === 'normal');
+  distributeEvenly(avail, settings.attackCount).forEach(p => { tiles[p] = 'attack'; });
+
   return tiles;
 }
 
@@ -157,26 +175,31 @@ export const useGameStore = create<GameState>((set, get) => ({
   traps: [],
   droppedCoins: [],
   flyingCoins: [],
+  tileFlashes: [],
   winner: null,
   gameMode: null,
   settings: {
-    boardSize: 40,
+    boardSize: 32,
     playerCount: 3,
     trapDropPercentage: 50,
     stealPercentage: 50,
-    turnMode: 'turn-based',
+    turnMode: 'simultaneous',
     aiDelay: false,
-    winTarget: 200,
+    winTarget: 250,
     bankCount: 6,
-    trapCount: 12,
-    bonus10Count: 6,
-    bonusX2Count: 2
+    trapCount: 9,
+    bonus10Count: 4,
+    bonusX2Count: 1,
+    attackCount: 2,
+    attackDamage: 20,
+    carryLimit: 60
   },
   currentPlayerIndex: 0,
   autoSpin: false,
   gameId: 0,
   cameraMode: 'isometric',
   pauseUntil: 0,
+  countdownUntil: 0,
 
   setPauseUntil: (time: number) => set({ pauseUntil: time }),
   resetToMenu: () => set({ gameMode: null, players: [], winner: null }),
@@ -211,6 +234,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
     }
 
+    const countdownEnd = Date.now() + 3500;
     set(state => ({
       gameId: state.gameId + 1,
       gameMode: mode,
@@ -221,7 +245,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       traps: initialTraps,
       droppedCoins: [],
       flyingCoins: [],
-      winner: null
+      tileFlashes: [],
+      winner: null,
+      countdownUntil: countdownEnd,
+      pauseUntil: countdownEnd
+    }));
+  },
+
+  setNextDice: (playerId: string, dice: [number, number] | null) => {
+    set(state => ({
+      players: state.players.map(p => p.id === playerId ? { ...p, nextDiceResult: dice } : p)
     }));
   },
 
@@ -249,14 +282,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (player.nextDiceResult) {
       [d1, d2] = player.nextDiceResult;
     } else {
-      [d1, d2] = generateDice(player, state.players, state.tiles, state.traps, state.gameMode, state.settings.boardSize, state.settings.turnMode);
+      [d1, d2] = generateDice(player, state.players, state.tiles, state.traps, state.gameMode, state.settings.boardSize, state.settings.turnMode, state.settings);
     }
     const steps = d1 + d2;
 
     set(state => ({
       players: state.players.map(p => 
         p.id === playerId 
-          ? { ...p, stepsRemaining: p.stepsRemaining + steps, cooldown: Date.now() + (steps * 200) + 1000, diceResult: [d1, d2], nextDiceResult: null, autoRollAt: null } 
+          ? { ...p, stepsRemaining: p.stepsRemaining + steps, cooldown: Date.now() + 1000, diceResult: [d1, d2], nextDiceResult: null, autoRollAt: null } 
           : p
       )
     }));
@@ -273,6 +306,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     let newTraps = [...state.traps];
     let newDroppedCoins = [...state.droppedCoins];
     let newFlyingCoins = [...state.flyingCoins];
+    let newTileFlashes = [...state.tileFlashes];
     let newWinner = state.winner;
     let newCurrentPlayerIndex = state.currentPlayerIndex;
     const now = Date.now();
@@ -323,7 +357,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           if (isAnyoneMoving) return p;
         }
 
-        const [d1, d2] = generateDice(p, newPlayers, state.tiles, newTraps, state.gameMode, bs, state.settings.turnMode);
+        const [d1, d2] = generateDice(p, newPlayers, state.tiles, newTraps, state.gameMode, bs, state.settings.turnMode, state.settings);
         
         // 决定延迟时间
         const isHumanAutoSpin = !p.isAI && state.autoSpin;
@@ -356,7 +390,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         return { 
           ...p, 
           stepsRemaining: steps, 
-          cooldown: now + (steps * 200) + 1000, 
+          cooldown: now + 1000, 
           diceResult: p.nextDiceResult,
           nextDiceResult: null,
           autoRollAt: null
@@ -403,7 +437,6 @@ export const useGameStore = create<GameState>((set, get) => ({
               startTime: now + c * 50,
               duration: duration
             });
-            newCooldown = Math.max(newCooldown, now + c * 50 + duration + 500);
           }
 
           newCarried += totalAmount;
@@ -438,7 +471,6 @@ export const useGameStore = create<GameState>((set, get) => ({
                     startTime: now + c * 50,
                     duration: duration
                   });
-                  newCooldown = Math.max(newCooldown, now + c * 50 + duration + 500);
                 }
 
                 newCarried += stealAmount;
@@ -476,10 +508,9 @@ export const useGameStore = create<GameState>((set, get) => ({
                   0.1,
                   endPos[2] + (Math.random() - 0.5) * 0.5
                 ],
-                startTime: now + c * 50, // Stagger start times
+                startTime: now + c * 50,
                 duration: duration
               });
-              newCooldown = Math.max(newCooldown, now + c * 50 + duration + 500);
             }
 
             newBanked += newCarried;
@@ -496,8 +527,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         
         // Landing effects
         if (isLastStep) {
-          // Reset cooldown to exactly 1s when movement finishes to avoid jitter
-          newCooldown = Math.max(newCooldown, now + 1000);
+          newCooldown = now + 1000;
           const tile = state.tiles[nextPos];
           
           // Landing on bank in strict mode
@@ -521,10 +551,9 @@ export const useGameStore = create<GameState>((set, get) => ({
                     0.1,
                     endPos[2] + (Math.random() - 0.5) * 0.5
                   ],
-                  startTime: now + c * 50, // Stagger start times
+                  startTime: now + c * 50,
                   duration: duration
                 });
-                newCooldown = Math.max(newCooldown, now + c * 50 + duration + 500);
               }
 
               newBanked += newCarried;
@@ -538,15 +567,65 @@ export const useGameStore = create<GameState>((set, get) => ({
           }
 
           if (tile === 'bonus_10') {
-            newCarried += 10;
-            newMessage = `+10!`;
+            newCarried += 5;
+            newMessage = `+5!`;
             newMessageTimeout = now + 2000;
           }
 
           if (tile === 'bonus_x2') {
-            newCarried = Math.floor(newCarried * 1.5);
-            newMessage = `+50%!`;
+            newCarried = newCarried * 2;
+            newMessage = `x2!`;
             newMessageTimeout = now + 2000;
+          }
+
+          if (tile === 'attack') {
+            const others = newPlayers
+              .map((op, idx) => ({ op, idx }))
+              .filter(({ idx }) => idx !== i);
+            if (others.length > 0) {
+              const target = others.reduce((a, b) => a.op.bankedCoins >= b.op.bankedCoins ? a : b);
+              const dmg = Math.min(target.op.bankedCoins, state.settings.attackDamage);
+              const targetLabel = newPlayers[target.idx].isAI ? 'AI ' + newPlayers[target.idx].id : 'You';
+              if (dmg > 0) {
+                const tPos = getTilePosition(target.op.position, bs);
+                const numCoinsToFly = Math.min(dmg, 20);
+                for (let c = 0; c < numCoinsToFly; c++) {
+                  const angle = (c / numCoinsToFly) * Math.PI * 2 + Math.random() * 0.5;
+                  const radius = 1.5 + Math.random() * 2;
+                  const duration = 600 + Math.random() * 400;
+                  newFlyingCoins.push({
+                    id: uuidv4(),
+                    startPos: [
+                      tPos[0] + (Math.random() - 0.5) * 0.5,
+                      1.5 + Math.random() * 0.5,
+                      tPos[2] + (Math.random() - 0.5) * 0.5
+                    ],
+                    endPos: [
+                      tPos[0] + Math.cos(angle) * radius,
+                      3 + Math.random() * 2,
+                      tPos[2] + Math.sin(angle) * radius
+                    ],
+                    startTime: now + c * 30,
+                    duration,
+                    color: '#ef4444',
+                    scale: 1.3
+                  });
+                }
+                newPlayers[target.idx] = {
+                  ...newPlayers[target.idx],
+                  bankedCoins: newPlayers[target.idx].bankedCoins - dmg,
+                  message: `Bank -${dmg}!`,
+                  messageTimeout: now + 2500
+                };
+                newMessage = `Demolish! ${targetLabel} bank -${dmg}`;
+                newTileFlashes.push({ position: nextPos, color: '#ef4444', until: now + 1000 });
+                newTileFlashes.push({ position: target.op.position, color: '#ef4444', until: now + 1200 });
+              } else {
+                newMessage = `Demolish missed! ${targetLabel} bank = 0`;
+                newTileFlashes.push({ position: nextPos, color: '#fb923c', until: now + 600 });
+              }
+              newMessageTimeout = now + 2000;
+            }
           }
 
           // Check trap
@@ -587,7 +666,6 @@ export const useGameStore = create<GameState>((set, get) => ({
                     startTime: now + c * 50,
                     duration: duration
                   });
-                  newCooldown = Math.max(newCooldown, now + c * 50 + duration + 500);
                 }
               };
 
@@ -599,6 +677,8 @@ export const useGameStore = create<GameState>((set, get) => ({
             newMessageTimeout = now + 2000;
           }
         }
+
+        newCarried = Math.min(newCarried, state.settings.carryLimit);
 
         newPlayers[i] = {
           ...p,
@@ -618,14 +698,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    // Clean up finished flying coins
     newFlyingCoins = newFlyingCoins.filter(c => now < c.startTime + c.duration);
+    newTileFlashes = newTileFlashes.filter(f => now < f.until);
 
     set({
       players: newPlayers,
       traps: newTraps,
       droppedCoins: newDroppedCoins,
       flyingCoins: newFlyingCoins,
+      tileFlashes: newTileFlashes,
       winner: newWinner,
       currentPlayerIndex: newCurrentPlayerIndex
     });

@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { useGameStore, TileType, getTilePosition } from '../store';
 import { Box, Text, Billboard } from '@react-three/drei';
 
@@ -7,12 +9,35 @@ const TILE_COLORS: Record<TileType, string> = {
   normal: '#e5e7eb',
   bonus_10: '#6ee7b7',
   bonus_x2: '#c084fc',
+  attack: '#fb923c',
 };
+
+function TileFlashEffect({ position, color }: { position: number; color: string }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
+  const boardSize = useGameStore(state => state.settings.boardSize);
+  const pos = getTilePosition(position, boardSize);
+
+  useFrame(() => {
+    if (!meshRef.current || !matRef.current) return;
+    const pulse = (Math.sin(Date.now() * 0.015) + 1) / 2;
+    matRef.current.opacity = 0.3 + pulse * 0.5;
+    meshRef.current.scale.y = 1 + pulse * 0.5;
+  });
+
+  return (
+    <mesh ref={meshRef} position={[pos[0], 0.15, pos[2]]}>
+      <boxGeometry args={[0.95, 0.3, 0.95]} />
+      <meshStandardMaterial ref={matRef} color={color} transparent emissive={color} emissiveIntensity={2} />
+    </mesh>
+  );
+}
 
 export function Board() {
   const tiles = useGameStore(state => state.tiles);
   const traps = useGameStore(state => state.traps);
   const droppedCoins = useGameStore(state => state.droppedCoins);
+  const tileFlashes = useGameStore(state => state.tileFlashes);
   const boardSize = useGameStore(state => state.settings.boardSize);
 
   return (
@@ -34,14 +59,21 @@ export function Board() {
             {type === 'bonus_10' && (
               <Billboard position={[0, 0.4, 0]}>
                 <Text fontSize={0.25} color="#6ee7b7" outlineWidth={0.02} outlineColor="#000" fontWeight="bold">
-                  +10
+                  +5
                 </Text>
               </Billboard>
             )}
             {type === 'bonus_x2' && (
               <Billboard position={[0, 0.4, 0]}>
                 <Text fontSize={0.25} color="#c084fc" outlineWidth={0.02} outlineColor="#000" fontWeight="bold">
-                  +50%
+                  x2
+                </Text>
+              </Billboard>
+            )}
+            {type === 'attack' && (
+              <Billboard position={[0, 0.4, 0]}>
+                <Text fontSize={0.25} color="#fb923c" outlineWidth={0.02} outlineColor="#000" fontWeight="bold">
+                  ATK
                 </Text>
               </Billboard>
             )}
@@ -96,6 +128,10 @@ export function Board() {
           </group>
         );
       })}
+
+      {tileFlashes.map((flash, idx) => (
+        <TileFlashEffect key={`flash-${idx}-${flash.position}`} position={flash.position} color={flash.color} />
+      ))}
     </group>
   );
 }
