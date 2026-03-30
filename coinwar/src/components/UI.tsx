@@ -69,6 +69,8 @@ export function UI() {
   const setCameraMode = useGameStore(state => state.setCameraMode);
   const cameraZoom = useGameStore(state => state.cameraZoom);
   const setCameraZoom = useGameStore(state => state.setCameraZoom);
+  const cameraHeight = useGameStore(state => state.cameraHeight);
+  const setCameraHeight = useGameStore(state => state.setCameraHeight);
   const setNextDice = useGameStore(state => state.setNextDice);
 
   const [gmOpen, setGmOpen] = useState(false);
@@ -505,14 +507,25 @@ export function UI() {
             <span className="font-bold text-sm hidden sm:inline">Menu</span>
           </button>
         </div>
-        <div className="bg-gray-900/80 backdrop-blur border border-gray-700 rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
-          <span className="text-gray-400 text-xs">Zoom</span>
-          <input
-            type="range" min="0.5" max="2.0" step="0.1" value={cameraZoom}
-            onChange={(e) => setCameraZoom(Number(e.target.value))}
-            className="w-20 accent-blue-500"
-          />
-          <span className="text-white text-xs font-bold w-8 text-center">{cameraZoom.toFixed(1)}x</span>
+        <div className="bg-gray-900/80 backdrop-blur border border-gray-700 rounded-xl px-3 py-2 flex flex-col gap-1.5 shadow-lg">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400 text-xs w-8">Zoom</span>
+            <input
+              type="range" min="0.5" max="2.0" step="0.1" value={cameraZoom}
+              onChange={(e) => setCameraZoom(Number(e.target.value))}
+              className="w-20 accent-blue-500"
+            />
+            <span className="text-white text-xs font-bold w-8 text-center">{cameraZoom.toFixed(1)}x</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400 text-xs w-8">Pitch</span>
+            <input
+              type="range" min="-1" max="1" step="0.1" value={cameraHeight}
+              onChange={(e) => setCameraHeight(Number(e.target.value))}
+              className="w-20 accent-blue-500"
+            />
+            <span className="text-white text-xs font-bold w-8 text-center">{cameraHeight > 0 ? '+' : ''}{cameraHeight.toFixed(1)}</span>
+          </div>
         </div>
       </div>
 

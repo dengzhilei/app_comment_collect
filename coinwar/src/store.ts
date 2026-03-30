@@ -108,6 +108,7 @@ export type GameState = {
   gameId: number; // 游戏局数计数器，用于重置时强制刷新 3D 组件
   cameraMode: CameraMode; // 当前摄像机视角
   cameraZoom: number; // 摄像机缩放（0.5~2.0，1.0 = 默认）
+  cameraHeight: number; // 摄像机高低角度（-1.0 低 ~ 1.0 高，0 = 默认）
   pauseUntil: number; // 暂停游戏逻辑直到指定时间戳
   countdownUntil: number; // 开局倒计时结束时间戳（0 = 无倒计时）
   
@@ -122,6 +123,7 @@ export type GameState = {
   // 切换摄像机视角
   setCameraMode: (mode: CameraMode) => void;
   setCameraZoom: (zoom: number) => void;
+  setCameraHeight: (h: number) => void;
   // 掷骰子逻辑
   rollDice: (playerId: string) => void;
   // GM：设置指定玩家下一次骰子结果
@@ -200,7 +202,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   autoSpin: false,
   gameId: 0,
   cameraMode: 'isometric',
-  cameraZoom: 1.0,
+  cameraZoom: 1.4,
+  cameraHeight: -0.2,
   pauseUntil: 0,
   countdownUntil: 0,
 
@@ -219,6 +222,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   }),
   setCameraMode: (mode: CameraMode) => set({ cameraMode: mode }),
   setCameraZoom: (zoom: number) => set({ cameraZoom: Math.max(0.5, Math.min(2.0, zoom)) }),
+  setCameraHeight: (h: number) => set({ cameraHeight: Math.max(-1, Math.min(1, h)) }),
 
   initGame: (mode: GameMode, settings: GameSettings) => {
     const newTiles = generateTiles(mode, settings);
