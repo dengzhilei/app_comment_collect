@@ -117,15 +117,18 @@ class AlbumSimulator:
                 cnt += 1
         return cnt
         
-    def get_multiplier(self, c_delta, star):
-        from_col = f"#{star}"
+    def get_multiplier(self, c_delta, star, is_gold):
         for row in self.drop_rate_change:
             if 'delta_range_min' not in row: continue
             min_val = float(row['delta_range_min']) if row['delta_range_min'] else -9999
             max_val = float(row['delta_range_max']) if row['delta_range_max'] else 9999
             if min_val <= c_delta < max_val:
-                # 获取该区间对应所有星级的加成倍率
-                rates = [float(x) for x in row['final_change_list'].split(',')]
+                # 获取该区间对应所有星级的加成倍率 (区分普通卡和金卡)
+                list_key = 'final_change_list_gold' if is_gold else 'final_change_list'
+                # 如果没有金卡列退回查找普通卡列
+                if list_key not in row or not row[list_key]:
+                    list_key = 'final_change_list'
+                rates = [float(x) for x in row[list_key].split(',')]
                 # 注意数组索引 0 表示 1 星，索引 1 表示 2 星...
                 idx = star - 1 if 1 <= star <= 6 else 0
                 return rates[idx]
@@ -174,7 +177,8 @@ class AlbumSimulator:
                 actual = self.get_set_collected_count(sid)
                 delta = expected - actual
                 star = int(c['star'])
-                mult = self.get_multiplier(delta, star)
+                is_gold = (int(c.get('card_type', 1)) == 2)
+                mult = self.get_multiplier(delta, star, is_gold)
             else:
                 mult = 1.0
                 
@@ -204,8 +208,12 @@ class AlbumSimulator:
         
         # 读取各类颜色卡的比例
         cat_weights = self.parse_probability_string(case_info['card_type'])
-        guarantees = [x.strip() for x in case_info['min_guarantee'].split(',')]
-        guarantee_weights = {g: cat_weights.get(g, 0) for g in guarantees if g in cat_weights}
+        # 根据更新的机制：保底卡池的权重直接由 min_guarantee_prob 读取
+        guarantee_weights = self.parse_probability_string(case_info.get('min_guarantee_prob', ''))
+        # 兼容兜底：如果没配，退回老规则
+        if not guarantee_weights and 'min_guarantee' in case_info:
+            guarantees = [x.strip() for x in case_info['min_guarantee'].split(',')]
+            guarantee_weights = {g: cat_weights.get(g, 0) for g in guarantees if g in cat_weights}
         
         drawn = []
         for i in range(cnt_to_draw):
