@@ -460,18 +460,18 @@ if __name__ == '__main__':
     
     # 测试使用的卡包序列
     pack_sequence = ([1] * 4 + [2] * 3 + [3] * 2 + [4]*1) * 10
-    pack_sequence = ([1] * 12 + [2] * 9 + [3] * 5 + [4]*3 + [5]*1) * 5
+    pack_sequence = ([1] * 12 + [2] * 9 + [3] * 5 + [4]*3 + [5]*1) * 30
     
     # 是否开启调控机制控制
     use_dynamic_unlock = True
-    use_weight_control = False
+    use_weight_control = True
     
-    # 【模式 1】：单次模拟，带详细打印
+    # # 【模式 1】：单次模拟，带详细打印
     # run_simulation(data_dir, pack_sequence, print_interval=10, 
     #                enable_dynamic_unlock=use_dynamic_unlock, 
     #                enable_weight_control=use_weight_control)
     
     # 【模式 2】：多进程跑几百次，获取均值汇总分布
-    run_multiple_simulations(data_dir, pack_sequence, num_runs=1000, 
+    run_multiple_simulations(data_dir, pack_sequence, num_runs=3000, 
                              enable_dynamic_unlock=use_dynamic_unlock, 
                              enable_weight_control=use_weight_control)
